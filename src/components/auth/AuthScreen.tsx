@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Copy, Eye, EyeOff, IdCard, KeyRound, Loader2, Lock, Radio, Shield, UserPlus } from 'lucide-react';
-import { authenticate, knownAccounts, type Session } from '../../auth/session';
+import { authenticate, hasLegacySession, knownAccounts, type Session } from '../../auth/session';
 import { useAccount } from '../../auth/AccountContext';
 import { formatUserId, shortId } from '../../utils/identity';
 
@@ -21,6 +21,9 @@ export function AuthScreen() {
   const [copied, setCopied] = useState(false);
 
   const accounts = knownAccounts();
+  // Someone upgrading from the long-address version: their old address is gone and
+  // they need to know why they are being asked to sign in again.
+  const [upgraded] = useState(() => hasLegacySession());
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +108,12 @@ export function AuthScreen() {
         {/* Form side */}
         <div className="lg:w-[54%] flex items-center justify-center px-6 py-12 lg:px-16">
           <div className="w-full max-w-[420px]">
+            {upgraded && (
+              <div className="mb-4 rounded-xl border border-tg-accent/30 bg-tg-accent/10 px-3.5 py-3 text-[12px] leading-relaxed text-tg-text">
+                <span className="font-semibold">Your address became a 6-digit ID.</span>{' '}
+                Sign in with the same username and password you used before — your ID and your chats come back.
+              </div>
+            )}
             <AnimatePresence mode="wait">
               {created ? (
                 <motion.div

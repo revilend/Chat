@@ -97,7 +97,7 @@ export function VideoNoteView({ url }: { url?: string }) {
         src={url}
         playsInline
         loop
-        preload="metadata"
+        preload="auto"
         className="w-full h-full object-cover rounded-full"
         // Draw the recorded first frame immediately, so the circle is never empty.
         onLoadedData={(e) => {

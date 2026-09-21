@@ -117,6 +117,17 @@ function surface(children: ReturnType<typeof createElement>, overrides?: Partial
 const authAlone = render('auth screen component', surface(createElement(AuthScreen)));
 expect(authAlone, 'Repeat password', 'signup asks for the password twice');
 
+// Somebody upgrading from the long-address version must be told why they have to
+// sign in again — not dropped on a blank screen.
+const legacyGet = g.localStorage.getItem;
+g.localStorage.getItem = (key: string) => (key === 'tgw.session.v1'
+  ? JSON.stringify({ userId: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6', username: 'aziza', name: 'Aziza', createdAt: 1 })
+  : null);
+const afterUpgrade = render('old long-address session → sign-in screen', createElement(App));
+expect(afterUpgrade, '6-digit ID', 'the ID upgrade is explained instead of failing silently');
+expect(afterUpgrade, 'Create account', 'the app still offers the normal sign-in flow');
+g.localStorage.getItem = legacyGet;
+
 // ═══ 2. Signed in: a clean, real workspace ═══
 const session = { userId: ME, username: 'aziza', name: 'Aziza Karimova', createdAt: Date.now() };
 g.localStorage.getItem = (key: string) => (key === 'tgw.session.v1' ? JSON.stringify(session) : null);

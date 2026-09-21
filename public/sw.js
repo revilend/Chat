@@ -1,4 +1,4 @@
-const CACHE_NAME = 'teleflow-v1';
+const CACHE_NAME = 'teleflow-v2';
 const APP_SHELL = ['./', './index.html', './manifest.json', './favicon.svg', './icon-192.png'];
 
 self.addEventListener('install', (event) => {
@@ -22,8 +22,10 @@ self.addEventListener('fetch', (event) => {
   // Navigations: always try the network first so a fresh deploy is picked up,
   // falling back to the cached shell when the app is offline.
   if (request.mode === 'navigate') {
+    // `no-store` matters: GitHub Pages serves HTML with a ten minute cache, and a
+    // cached index.html pins the whole app to an old build.
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy)).catch(() => {});
@@ -34,10 +36,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: serve from cache and refresh in the background.
+  // The HTML entry is only ever used as an offline fallback, never as the
+  // answer to a live navigation.
+  if (request.destination === 'document' || request.url.endsWith('/index.html')) {
+    event.respondWith(fetch(request, { cache: 'no-store' }).catch(() => caches.match('./index.html').then((c) => c || fetch(request))));
+    return;
+  }
+
+  // Static assets are content-hashed by the build, so serving them from the cache
+  // is both fast and safe: a new build ships new file names.
   event.respondWith(
     caches.match(request).then((cached) => {
-      const network = fetch(request)
+      const network = fetch(request, { cache: 'no-store' })
         .then((response) => {
           if (response && response.status === 200) {
             const copy = response.clone();

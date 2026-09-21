@@ -3,7 +3,7 @@ import { useApp } from '../../store/AppContext';
 import type { Chat, Message } from '../../types';
 import { Smile, Paperclip, Mic, Send, Image, MapPin, FileText, BarChart3, Clock, X, Slash, Bell, Star, EyeOff, Video, Scissors, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { describeFile, blobToDataUrl } from '../../utils/media';
+import { describeFile, blobToDataUrl, formatBytes } from '../../utils/media';
 import { VoiceCapture, VideoNoteCapture, processVoiceClip, decodeAudioUrl, waveformFromBuffer, VOICE_EFFECTS, type VoiceEffect } from '../../utils/audioFx';
 
 const emojiList = ['😀','😂','😍','🥰','😎','🤔','👍','❤️','🔥','✨','🎉','💯','🙏','👋','😢','😡','🥳','😴','🤗','😏','💪','🚀','⭐','🌟','💫','🎂','🎵','📸','🎮','💻','📱','☕','🍕','🌈','⚽','🎯','💎','🦄','🐱','🐶'];
@@ -32,6 +32,8 @@ export function MessageInput({ chat }: Props) {
   const [levels, setLevels] = useState<number[]>([]);
   // Post-recording trim + effect stage
   const [clip, setClip] = useState<{ url: string; duration: number; waveform: number[] } | null>(null);
+  /** A recorded circular video, shown for review before it is sent. */
+  const [videoDraft, setVideoDraft] = useState<{ url: string; size: number } | null>(null);
   const [trim, setTrim] = useState({ start: 0, end: 0 });
   const [sendingClip, setSendingClip] = useState(false);
   const [silentHint, setSilentHint] = useState(false);
@@ -160,6 +162,7 @@ export function MessageInput({ chat }: Props) {
     videoStreamRef.current = null;
     setClip(null);
     setVideoNote({ active: false, url: null });
+    setVideoDraft(null);
     setIsRecording(false);
     if (recordTimerRef.current) clearInterval(recordTimerRef.current);
     setRecordTime(0);
@@ -203,6 +206,8 @@ export function MessageInput({ chat }: Props) {
     }
   };
 
+  // Stops the camera and shows the recording, instead of sending a clip nobody
+  // has seen. An empty recording is reported instead of leaving a bare circle.
   const stopVideoNote = async () => {
     const capture = videoCaptureRef.current;
     videoCaptureRef.current = null;
@@ -210,17 +215,24 @@ export function MessageInput({ chat }: Props) {
     if (!capture) { setVideoNote({ active: false, url: null }); return; }
     try {
       const blob = await capture.stop();
+      if (!blob || blob.size === 0) throw new Error('The camera recorded nothing — check the camera permission and try again.');
       const url = await blobToDataUrl(blob);
-      deliver({
-        id: `msg_vnote_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '',
-        timestamp: Date.now(), type: 'video', videoNote: true, videoUrl: url, readBy: ['user_me'],
-      });
       setVideoNote({ active: false, url: null });
-      setShowAttach(false);
+      setVideoDraft({ url, size: blob.size });
     } catch (err) {
       setRecordError((err as Error).message || 'Video message failed');
       setVideoNote({ active: false, url: null });
     }
+  };
+
+  const sendVideoNote = () => {
+    if (!videoDraft) return;
+    deliver({
+      id: `msg_vnote_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '',
+      timestamp: Date.now(), type: 'video', videoNote: true, videoUrl: videoDraft.url, readBy: ['user_me'],
+    });
+    setVideoDraft(null);
+    setShowAttach(false);
   };
 
   // Read the picked files for real, so photos/files are actually attached
@@ -312,10 +324,28 @@ export function MessageInput({ chat }: Props) {
       {/* Circular video message recorder */}
       <AnimatePresence>
         {videoNote.active && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-tg-reply-bar border-b border-black/20 px-4 py-3 flex items-center gap-4">
-          <video ref={videoPreviewRef} autoPlay muted playsInline className="w-20 h-20 rounded-full object-cover bg-black" />
-          <div className="flex-1 text-xs text-tg-text-secondary">Recording a video message…</div>
+          <video ref={videoPreviewRef} autoPlay muted playsInline className="w-20 h-20 rounded-full object-cover bg-black flex-shrink-0" />
+          <div className="flex-1 text-xs text-tg-text-secondary">Recording a video message… tap Stop when you are done.</div>
           <button onClick={cancelClip} className="px-3 py-1.5 rounded text-xs bg-tg-input text-tg-text-secondary">Cancel</button>
-          <button onClick={stopVideoNote} className="px-3 py-1.5 rounded text-xs bg-tg-accent text-white">Send</button>
+          <button onClick={stopVideoNote} className="px-3 py-1.5 rounded text-xs bg-tg-accent text-white">Stop</button>
+        </motion.div>}
+      </AnimatePresence>
+
+      {/* Review the recording before it goes out */}
+      <AnimatePresence>
+        {videoDraft && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-tg-reply-bar border-b border-black/20 px-4 py-3">
+          <div className="flex items-center gap-3">
+            {/* The recorded clip plays here, so an empty recording is impossible to miss */}
+            <video src={videoDraft.url} autoPlay loop muted playsInline className="w-20 h-20 rounded-full object-cover bg-black flex-shrink-0" />
+            <div className="flex-1 min-w-0 text-xs text-tg-text-secondary">
+              <div className="text-tg-text">Video message ready — {formatBytes(videoDraft.size)}</div>
+              {videoDraft.size > 6_000_000 && (
+                <div className="mt-1 text-amber-400">Large clip: it may not fit through a direct connection. Keep it under ~10 seconds.</div>
+              )}
+            </div>
+            <button onClick={cancelClip} className="px-3 py-1.5 rounded text-xs bg-tg-input text-tg-text-secondary">Cancel</button>
+            <button onClick={sendVideoNote} className="px-3 py-1.5 rounded text-xs bg-tg-accent text-white">Send</button>
+          </div>
         </motion.div>}
       </AnimatePresence>
 

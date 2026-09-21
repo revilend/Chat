@@ -113,6 +113,22 @@ export async function authenticate(
   return session;
 }
 
+/**
+ * True when this browser still holds a session from the version that used long
+ * 32-character addresses. Those addresses cannot be reached any more, so the
+ * sign-in screen tells the person why they have to sign in again.
+ */
+export function hasLegacySession(): boolean {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as Session;
+    return Boolean(parsed?.userId) && !isValidUserId(parsed.userId);
+  } catch {
+    return false;
+  }
+}
+
 /** Whether this browser has seen the account before (used for a friendly hint). */
 export function isKnownAccount(username: string): boolean {
   const handle = normalizeUsername(username);

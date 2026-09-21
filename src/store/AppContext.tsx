@@ -452,9 +452,22 @@ function reducer(state: AppState, action: Action): AppState {
     case 'ADD_ANNOUNCEMENT': return { ...state, chats: state.chats.map(c => c.id === action.chatId ? { ...c, announcements: [...(c.announcements || []), action.text] } : c) };
     case 'REMOVE_ANNOUNCEMENT': return { ...state, chats: state.chats.map(c => c.id === action.chatId ? { ...c, announcements: (c.announcements || []).filter((_, i) => i !== action.index) } : c) };
     // --- Real accounts ---
-    // Signing in only swaps the session: the chats on screen belong to the account
-    // we are leaving, and the new account's own workspace is loaded right after.
-    case 'SIGN_IN': return { ...state, session: action.session, hydratedFor: null, netStatus: 'connecting', netDetail: '', activeChatId: null };
+    // Signing in swaps the session *and* builds this account's own workspace, so a
+    // brand new account starts with Saved Messages and the helper bot instead of an
+    // empty screen — and never shows the previous account's chats. A stored
+    // workspace, when there is one, replaces this right after hydration.
+    case 'SIGN_IN': return {
+      ...state,
+      ...buildAccountWorkspace(action.session),
+      session: action.session,
+      hydratedFor: null,
+      netStatus: 'connecting',
+      netDetail: '',
+      activeChatId: null,
+      selectedMessages: [],
+      replyTo: null,
+      editingMessageId: null,
+    };
     case 'SET_HYDRATED': return { ...state, hydratedFor: action.userId };
     case 'SIGN_OUT': return { ...initialState };
     case 'SET_NET_STATUS': return { ...state, netStatus: action.status, netDetail: action.detail };
