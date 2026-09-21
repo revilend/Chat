@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+@theme {
+  --color-tg-bg: #0e1621;
+  --color-tg-sidebar: #17212b;
+  --color-tg-input: #242f3d;
+  --color-tg-outgoing: #2b5278;
+  --color-tg-incoming: #182533;
+  --color-tg-accent: #2481cc;
+  --color-tg-accent-hover: #1e6eb0;
+  --color-tg-text: #f5f5f5;
+  --color-tg-text-secondary: #6c7883;
+  --color-tg-text-time-out: #7e9db8;
+  --color-tg-text-time-in: #687b8c;
+  --color-tg-border: #0e1621;
+  --color-tg-hover: #202b36;
+  --color-tg-active: #2b5278;
+  --color-tg-green: #4fae4e;
+  --color-tg-red: #e53935;
+  --color-tg-online: #4dcd5e;
+  --color-tg-reply-bar: #1e2c3a;
+  --color-tg-header: #17212b;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+  background: #0e1621;
+  color: #f5f5f5;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3a4a5b; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4a5a6b; }
+
+/* Telegram doodle pattern */
+.tg-doodle {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23172533' fill-opacity='0.3'%3E%3Cpath d='M15 5l2 3-2 3M45 25l2 3-2 3M25 45l2 3-2 3M5 15l2 3-2 3M35 35l2 3-2 3M55 5l2 3-2 3M20 10l1.5 2-1.5 2M50 40l1.5 2-1.5 2M10 50l1.5 2-1.5 2M40 20l1.5 2-1.5 2M30 0l1 1.5-1 1.5M0 30l1 1.5-1 1.5M60 50l1 1.5-1 1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Spoiler */
+.spoiler-hidden {
+  filter: blur(4px);
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.3s;
+}
+.spoiler-hidden:hover {
+  filter: blur(6px);
+}
+.spoiler-revealed {
+  filter: none;
+}
+
+/* Message bubble tail */
+.bubble-tail-out::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid #2b5278;
+  border-top: 8px solid transparent;
+}
+.bubble-tail-in::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-right: 8px solid #182533;
+  border-top: 8px solid transparent;
+}
+
+/* Audio waveform */
+@keyframes waveform {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+.waveform-bar {
+  animation: waveform 0.8s ease-in-out infinite;
+}
+
+/* Typing indicator */
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+.typing-dot:nth-child(1) { animation: typing-dot 1.4s ease-in-out infinite; }
+.typing-dot:nth-child(2) { animation: typing-dot 1.4s ease-in-out 0.2s infinite; }
+.typing-dot:nth-child(3) { animation: typing-dot 1.4s ease-in-out 0.4s infinite; }
+
+/* Stories progress */
+@keyframes story-progress {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* Confetti */
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Glow ring for voice chat */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(77, 205, 94, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(77, 205, 94, 0); }
+}
+.glow-ring {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Pin lock screen */
+.pin-dot {
+  transition: all 0.2s;
+}
+.pin-dot.filled {
+  background: #2481cc;
+  transform: scale(1.2);
+}
