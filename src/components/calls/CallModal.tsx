@@ -194,14 +194,14 @@ export function CallModal() {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-sm bg-tg-sidebar rounded-2xl shadow-2xl overflow-hidden text-center"
+        className="w-full max-w-sm card overflow-hidden text-center"
       >
         {callType === 'video' && (
           <div className="relative h-64 bg-tg-bg">
             <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
             {!connected && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-semibold ${getAvatarColor(chat?.id || '')}`}>
+                <div style={{ background: getAvatarColor(chat?.id || '') }} className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-semibold">
                   {getInitials(otherUser?.name || 'Unknown')}
                 </div>
               </div>
@@ -225,7 +225,7 @@ export function CallModal() {
 
         <div className="py-8 px-4">
           {audioOnly && (
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-semibold mx-auto mb-4 ${getAvatarColor(chat?.id || '')} ${connected ? '' : 'animate-pulse'}`}>
+            <div style={{ background: getAvatarColor(chat?.id || '') }} className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-semibold mx-auto mb-4 ${connected ? '' : 'animate-pulse'}`}>
               {getInitials(otherUser?.name || 'Unknown')}
             </div>
           )}

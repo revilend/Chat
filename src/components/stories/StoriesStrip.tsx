@@ -79,7 +79,7 @@ export function StoriesStrip() {
               className="flex flex-col items-center gap-1 flex-shrink-0"
             >
               <div className={`w-12 h-12 rounded-full p-[2px] ${isViewed ? 'bg-tg-text-secondary/30' : 'bg-tg-accent'}`}>
-                <div className={`w-full h-full rounded-full flex items-center justify-center text-white text-sm font-semibold ${getAvatarColor(story.userId)}`}>
+                <div style={{ background: getAvatarColor(story.userId) }} className="w-full h-full rounded-full flex items-center justify-center text-white text-sm font-semibold">
                   {getInitials(user?.name || '?')}
                 </div>
               </div>
@@ -126,7 +126,7 @@ export function StoriesStrip() {
 
               {/* User info */}
               <div className="absolute top-6 left-4 right-4 flex items-center gap-2 z-10">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${getAvatarColor(viewingStoryData.userId)}`}>
+                <div style={{ background: getAvatarColor(viewingStoryData.userId) }} className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                   {getInitials(getUser(viewingStoryData.userId)?.name || '?')}
                 </div>
                 <div>

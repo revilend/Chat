@@ -22,7 +22,7 @@ export function ReminderModal() {
   if (!state.showReminderModal) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => dispatch({ type: 'TOGGLE_REMINDER_MODAL' })}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 w-full max-w-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="card p-4 w-full max-w-sm">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-medium text-tg-text flex items-center gap-2"><Bell size={18} /> Set Reminder</h3>
           <button onClick={() => dispatch({ type: 'TOGGLE_REMINDER_MODAL' })}><X size={18} className="text-tg-text-secondary" /></button>
@@ -60,7 +60,7 @@ export function JoinRequestModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => dispatch({ type: 'TOGGLE_JOIN_APPROVAL' })}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="card p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-medium text-tg-text flex items-center gap-2"><UserPlus size={18} /> Join Requests</h3>
           <button onClick={() => dispatch({ type: 'TOGGLE_JOIN_APPROVAL' })}><X size={18} className="text-tg-text-secondary" /></button>
@@ -91,7 +91,7 @@ export function WalletModal() {
   const w = state.wallet;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => dispatch({ type: 'TOGGLE_WALLET' })}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="card p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-medium text-tg-text flex items-center gap-2"><Star size={18} className="text-amber-400" /> Wallet</h3>
           <button onClick={() => dispatch({ type: 'TOGGLE_WALLET' })}><X size={18} className="text-tg-text-secondary" /></button>
@@ -137,7 +137,7 @@ export function LeaderboardModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => dispatch({ type: 'TOGGLE_LEADERBOARD' })}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 w-full max-w-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="card p-4 w-full max-w-sm">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-medium text-tg-text flex items-center gap-2"><Trophy size={18} /> Top Members</h3>
           <button onClick={() => dispatch({ type: 'TOGGLE_LEADERBOARD' })}><X size={18} className="text-tg-text-secondary" /></button>
@@ -177,7 +177,7 @@ export function SplitBillModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => dispatch({ type: 'TOGGLE_SPLIT_BILL' })}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 w-full max-w-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="card p-4 w-full max-w-sm">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-medium text-tg-text flex items-center gap-2"><Calculator size={18} /> Split Bill</h3>
           <button onClick={() => dispatch({ type: 'TOGGLE_SPLIT_BILL' })}><X size={18} className="text-tg-text-secondary" /></button>
@@ -250,7 +250,7 @@ export function StickerCreatorModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => dispatch({ type: 'TOGGLE_STICKER_CREATOR' })}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="card p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-medium text-tg-text flex items-center gap-2"><Image size={18} /> Sticker Pack Creator</h3>
           <button onClick={() => dispatch({ type: 'TOGGLE_STICKER_CREATOR' })}><X size={18} className="text-tg-text-secondary" /></button>
@@ -299,7 +299,7 @@ export function ReminderAlert() {
         initial={{ opacity: 0, scale: 0.9, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         onClick={e => e.stopPropagation()}
-        className="bg-tg-sidebar rounded-2xl shadow-2xl p-5 w-full max-w-sm text-center"
+        className="card p-5 w-full max-w-sm text-center"
       >
         <motion.div animate={{ rotate: [0, -12, 12, 0] }} transition={{ repeat: Infinity, duration: 1.4 }} className="text-5xl mb-2">⏰</motion.div>
         <h3 className="text-base font-medium text-tg-text mb-1">Reminder</h3>

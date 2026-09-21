@@ -50,9 +50,23 @@ export function ChatArea() {
       )}
       {/* Feature 17: Announcement banner */}
       <AnnouncementBanner />
-      {pinnedMessages.length > 0 && <div className="bg-tg-reply-bar border-b border-black/20 px-4 py-2 flex items-center gap-2"><span className="text-xs text-tg-accent font-medium">📌 Pinned Message</span><span className="text-xs text-tg-text-secondary truncate flex-1">{pinnedMessages[pinnedMessages.length - 1].text}</span></div>}
-      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-4 md:px-[10%] lg:px-[16%] py-4">
-        {messages.length === 0 && <div className="flex flex-col items-center justify-center h-full text-tg-text-secondary"><div className="text-4xl mb-3">💬</div><div className="text-sm">No messages yet</div></div>}
+      {pinnedMessages.length > 0 && (
+        <div className="bg-tg-reply-bar border-b border-black/25 px-3 py-2 flex items-center gap-2">
+          <span className="text-tg-accent text-sm">📌</span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-medium text-tg-accent">Pinned message</div>
+            <div className="text-xs text-tg-text-secondary truncate">{pinnedMessages[pinnedMessages.length - 1].text}</div>
+          </div>
+        </div>
+      )}
+      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 sm:px-4 md:px-[10%] lg:px-[16%] py-3">
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-tg-text-secondary">
+            <div className="w-16 h-16 rounded-full bg-tg-sidebar/70 flex items-center justify-center text-3xl mb-3 shadow-sm">💬</div>
+            <div className="text-sm">No messages yet</div>
+            <div className="text-xs mt-1 opacity-70">Say hello to start the history</div>
+          </div>
+        )}
         <MessageList messages={messages} />
         <div ref={messagesEndRef} />
       </div>
@@ -70,9 +84,12 @@ function MessageList({ messages }: { messages: Message[] }) {
   const elements: React.ReactNode[] = [];
   messages.forEach((msg, i) => {
     const date = new Date(msg.timestamp).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
-    if (date !== lastDate) { lastDate = date; elements.push(<div key={`date-${date}`} className="flex justify-center my-3"><span className="bg-tg-sidebar/80 text-tg-text-secondary text-xs px-3 py-1 rounded-full backdrop-blur-sm">{isToday(new Date(msg.timestamp)) ? 'Today' : isYesterday(new Date(msg.timestamp)) ? 'Yesterday' : date}</span></div>); }
-    const isGroup = i > 0 && messages[i - 1].senderId === msg.senderId && msg.timestamp - messages[i - 1].timestamp < 60000;
-    elements.push(<MessageBubble key={msg.id} message={msg} isGrouped={!!isGroup} isSelected={selectedSet.has(msg.id)} />);
+    if (date !== lastDate) { lastDate = date;      elements.push(<div key={`date-${date}`} className="flex justify-center my-3"><span className="bg-black/30 text-tg-text-secondary text-[11px] font-medium px-3 py-1 rounded-full backdrop-blur-sm">{isToday(new Date(msg.timestamp)) ? 'Today' : isYesterday(new Date(msg.timestamp)) ? 'Yesterday' : date}</span></div>); }
+    const previous = messages[i - 1];
+    const next = messages[i + 1];
+    const isGroup = i > 0 && previous.senderId === msg.senderId && msg.timestamp - previous.timestamp < 60000;
+    const sameRunAfter = !!next && next.senderId === msg.senderId && next.timestamp - msg.timestamp < 60000;
+    elements.push(<MessageBubble key={msg.id} message={msg} isGrouped={!!isGroup} isLast={!sameRunAfter} isSelected={selectedSet.has(msg.id)} />);
   });
   return <>{elements}</>;
 }

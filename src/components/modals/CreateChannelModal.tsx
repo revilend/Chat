@@ -37,7 +37,7 @@ export function CreateChannelModal() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md bg-tg-sidebar rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md card overflow-hidden"
       >
         <div className="flex items-center gap-3 px-4 h-[56px] border-b border-black/20">
           <button onClick={() => dispatch({ type: 'TOGGLE_CREATE_CHANNEL' })}><X size={20} className="text-tg-text-secondary" /></button>

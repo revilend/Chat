@@ -88,7 +88,7 @@ export function MiniAppSnake() {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 text-center"
+        className="card p-4 text-center"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">

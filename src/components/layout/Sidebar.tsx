@@ -77,16 +77,17 @@ export function Sidebar() {
   return (
     <div className="h-full flex flex-col bg-tg-sidebar relative">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2.5 h-[56px]">
+      <div className="flex items-center gap-2 px-2.5 py-2.5 h-[60px]">
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="p-2 rounded-full hover:bg-tg-hover transition-colors"
+          className="icon-btn"
+          title="Menu"
         >
-          {showMenu ? <X size={20} className="text-tg-text-secondary" /> : <Menu size={20} className="text-tg-text-secondary" />}
+          {showMenu ? <X size={20} /> : <Menu size={20} />}
         </button>
 
-        <div className={`flex-1 flex items-center bg-tg-input rounded-full px-3 h-10 transition-all ${searchFocused ? 'ring-1 ring-tg-accent' : ''}`}>
-          <Search size={16} className="text-tg-text-secondary mr-2 flex-shrink-0" />
+        <div className={`flex-1 flex items-center bg-tg-input rounded-2xl px-3.5 h-11 transition-all ${searchFocused ? 'ring-2 ring-tg-accent/60 bg-tg-hover' : ''}`}>
+          <Search size={17} className="text-tg-text-secondary mr-2.5 flex-shrink-0" />
           <input
             type="text"
             placeholder={t('search')}
@@ -94,33 +95,35 @@ export function Sidebar() {
             onChange={(e) => dispatch({ type: 'SET_SEARCH', query: e.target.value })}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
-            className="bg-transparent outline-none text-tg-text text-sm w-full placeholder:text-tg-text-secondary"
+            className="bg-transparent outline-none text-tg-text text-[15px] w-full placeholder:text-tg-text-secondary"
           />
           {state.searchQuery && (
-            <button onClick={() => dispatch({ type: 'SET_SEARCH', query: '' })} className="ml-1">
-              <X size={14} className="text-tg-text-secondary" />
+            <button onClick={() => dispatch({ type: 'SET_SEARCH', query: '' })} className="ml-1 p-1 rounded-full hover:bg-black/20" title="Clear">
+              <X size={15} className="text-tg-text-secondary" />
             </button>
           )}
         </div>
       </div>
 
       {/* Folder Tabs */}
-      <div className="flex border-b border-black/20 overflow-x-auto">
+      <div className="flex gap-1 px-2.5 pb-2 overflow-x-auto">
         {folders.map(folder => {
           const count = folder.id === 'unread' ? totalUnread : 0;
           return (
             <button
               key={folder.id}
               onClick={() => dispatch({ type: 'SET_ACTIVE_FOLDER', folder: folder.id })}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap transition-colors border-b-2 ${
+              className={`flex items-center gap-1.5 px-3 h-8 rounded-full text-[13px] font-medium whitespace-nowrap transition-all ${
                 state.activeFolder === folder.id
-                  ? 'text-tg-accent border-tg-accent'
-                  : 'text-tg-text-secondary border-transparent hover:text-tg-text'
+                  ? 'bg-tg-accent text-white shadow-md shadow-tg-accent/25'
+                  : 'text-tg-text-secondary hover:bg-tg-hover hover:text-tg-text'
               }`}
             >
               {folder.label === 'allChats' ? t('allChats') : t(folder.label)}
               {count > 0 && (
-                <span className="bg-tg-accent text-white text-[10px] rounded-full px-1.5 min-w-[18px] text-center">
+                <span className={`text-[10px] rounded-full px-1.5 min-w-[18px] text-center font-semibold ${
+                  state.activeFolder === folder.id ? 'bg-white/25 text-white' : 'bg-tg-accent text-white'
+                }`}>
                   {count}
                 </span>
               )}
@@ -130,7 +133,7 @@ export function Sidebar() {
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-1.5 pb-2 space-y-0.5">
         {onlyPlaceholders && !state.searchQuery && (
           <div className="md:hidden m-3 rounded-xl bg-tg-accent/10 border border-tg-accent/25 p-3">
             <div className="text-xs font-medium text-tg-text">Start a real conversation</div>
@@ -182,7 +185,8 @@ export function Sidebar() {
       {/* FAB */}
       <button
         onClick={() => dispatch({ type: 'TOGGLE_CONTACTS' })}
-        className="absolute bottom-6 right-6 w-14 h-14 rounded-full bg-tg-accent flex items-center justify-center shadow-lg hover:bg-tg-accent-hover transition-all hover:scale-105 active:scale-95"
+        title="New message"
+        className="absolute bottom-6 right-6 w-14 h-14 rounded-2xl bg-tg-accent flex items-center justify-center shadow-xl shadow-tg-accent/35 hover:bg-tg-accent-hover hover:scale-105 active:scale-95"
       >
         <Pencil size={22} className="text-white" />
       </button>

@@ -60,7 +60,7 @@ export function HamburgerMenu({ onClose }: Props) {
               onClick={() => { dispatch({ type: 'TOGGLE_PROFILE' }); onClose(); }}
               className="flex items-center gap-3 w-full hover:bg-tg-hover rounded-lg p-2 transition-colors"
             >
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${getAvatarColor(state.currentUser.id || 'me')}`}>
+              <div style={{ background: getAvatarColor(state.currentUser.id || 'me') }} className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold">
                 {getInitials(state.currentUser.name || '?')}
               </div>
               <div className="text-left min-w-0">

@@ -6,15 +6,25 @@ function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
+// Telegram-style avatars: a flat, saturated colour picked from the address, with
+// a soft diagonal sheen so the circle does not read as a plain block.
+const avatarPalette = [
+  'linear-gradient(135deg, #ff885e, #ff516a)',
+  'linear-gradient(135deg, #ffcd6a, #ffa85c)',
+  'linear-gradient(135deg, #a695ff, #8f7bff)',
+  'linear-gradient(135deg, #6fd8ff, #52b6ff)',
+  'linear-gradient(135deg, #62c5a8, #3eb489)',
+  'linear-gradient(135deg, #ff9ecb, #ff6fa5)',
+  'linear-gradient(135deg, #7fd1f7, #4aa8f0)',
+  'linear-gradient(135deg, #b7c0cd, #8b98a8)',
+  'linear-gradient(135deg, #ffb26b, #ff8a3d)',
+  'linear-gradient(135deg, #9be36b, #5fc23a)',
+];
+
 function getAvatarColor(id: string): string {
-  const colors = [
-    'bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500',
-    'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-teal-500',
-    'bg-pink-500', 'bg-orange-500',
-  ];
   let hash = 0;
   for (const c of id) hash = ((hash << 5) - hash + c.charCodeAt(0)) | 0;
-  return colors[Math.abs(hash) % colors.length];
+  return avatarPalette[Math.abs(hash) % avatarPalette.length];
 }
 
 function formatTime(timestamp?: number): string {
@@ -48,15 +58,16 @@ export function ChatListItem({ chat }: { chat: Chat }) {
       onContextMenu={(e) => {
         e.preventDefault();
       }}
-      className={`w-full flex items-center gap-3 px-3 py-1.5 transition-colors text-left ${
-        isActive ? 'bg-tg-accent/30' : 'hover:bg-tg-hover'
+      className={`w-full flex items-center gap-3 px-2.5 py-2 text-left rounded-xl transition-colors ${
+        isActive ? 'bg-tg-accent text-white' : 'hover:bg-tg-hover active:bg-tg-hover'
       }`}
     >
       {/* Avatar */}
       <div className="relative flex-shrink-0">
-        <div className={`w-[54px] h-[54px] rounded-full flex items-center justify-center text-white font-semibold text-lg ${
-          chat.type === 'saved' ? 'bg-tg-accent' : getAvatarColor(chat.id)
-        }`}>
+        <div
+          style={{ background: chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : getAvatarColor(chat.id) }}
+          className="w-[54px] h-[54px] rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-sm"
+        >
           {chat.type === 'saved' ? (
             <Bookmark size={24} fill="white" />
           ) : chat.type === 'group' ? (
@@ -78,7 +89,7 @@ export function ChatListItem({ chat }: { chat: Chat }) {
           <div className="flex items-center gap-1 min-w-0 flex-1">
             {chat.type === 'channel' && <Volume2 size={14} className="text-tg-text-secondary flex-shrink-0" />}
             {isBot && <span className="text-tg-accent text-xs">🤖</span>}
-            <span className={`text-sm font-medium truncate ${chat.draft ? 'text-tg-red' : 'text-tg-text'}`}>
+            <span className={`text-[15px] font-medium truncate ${chat.draft ? 'text-tg-red' : ''}`}>
               {displayName}
             </span>
           </div>
@@ -90,7 +101,7 @@ export function ChatListItem({ chat }: { chat: Chat }) {
                 <Check size={16} className="text-tg-text-secondary" />
               )
             )}
-            <span className={`text-xs ${chat.unreadCount > 0 ? 'text-tg-accent' : 'text-tg-text-secondary'}`}>
+            <span className={`text-[11px] shrink-0 ${chat.unreadCount > 0 && !isActive ? 'text-tg-accent' : isActive ? 'text-white/70' : 'text-tg-text-secondary'}`}>
               {formatTime(chat.lastMessage?.timestamp)}
             </span>
           </div>
@@ -99,14 +110,14 @@ export function ChatListItem({ chat }: { chat: Chat }) {
         <div className="flex items-center justify-between mt-0.5">
           <div className="flex-1 min-w-0">
             {chat.isTyping ? (
-              <span className="text-sm text-tg-accent">{chat.typingUserId === 'user_helper_bot' ? '🤖 typing...' : 'typing...'}</span>
+              <span className={`text-[13px] ${isActive ? 'text-white' : 'text-tg-accent'}`}>{chat.typingUserId === 'user_helper_bot' ? '🤖 typing…' : 'typing…'}</span>
             ) : chat.draft ? (
-              <span className="text-sm text-tg-red">Draft: {chat.draft}</span>
+              <span className="text-[13px] text-tg-red">Draft: {chat.draft}</span>
             ) : chat.lastMessage ? (
-              <p className="text-xs text-tg-text-secondary truncate">
-                {chat.lastMessage.senderId === 'user_me' && <span className="text-tg-text-secondary">You: </span>}
+              <p className={`text-[13px] truncate ${isActive ? 'text-white/80' : 'text-tg-text-secondary'}`}>
+                {chat.lastMessage.senderId === 'user_me' && <span>You: </span>}
                 {chat.type === 'group' && chat.lastMessage.senderId !== 'user_me' && (
-                  <span className="text-tg-accent">{getUser(chat.lastMessage.senderId)?.name?.split(' ')[0]}: </span>
+                  <span className={isActive ? 'text-white' : 'text-tg-accent'}>{getUser(chat.lastMessage.senderId)?.name?.split(' ')[0]}: </span>
                 )}
                 {chat.lastMessage.type === 'voice' ? '🎤 Voice message' :
                  chat.lastMessage.type === 'photo' ? '📷 Photo' :
@@ -124,8 +135,8 @@ export function ChatListItem({ chat }: { chat: Chat }) {
               <VolumeX size={14} className="text-tg-text-secondary" />
             )}
             {chat.unreadCount > 0 && (
-              <span className={`min-w-[20px] h-[20px] rounded-full text-[11px] font-medium flex items-center justify-center px-1.5 ${
-                chat.isMuted ? 'bg-tg-text-secondary/30 text-tg-text-secondary' : 'bg-tg-accent text-white'
+              <span className={`min-w-[22px] h-[22px] rounded-full text-[12px] font-semibold flex items-center justify-center px-1.5 ${
+                chat.isMuted ? 'bg-tg-text-secondary/30 text-tg-text-secondary' : isActive ? 'bg-white text-tg-accent' : 'bg-tg-accent text-white'
               }`}>
                 {chat.unreadCount}
               </span>

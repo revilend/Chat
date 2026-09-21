@@ -31,11 +31,14 @@ export function ChatHeader({ chat }: { chat: Chat }) {
   };
 
   return (
-    <div className="flex items-center gap-0.5 h-[56px] px-2 bg-tg-header border-b border-black/20 flex-shrink-0 min-w-0">
-      <button onClick={() => dispatch({ type: 'SET_ACTIVE_CHAT', chatId: null })} className="md:hidden shrink-0 p-2 rounded-full hover:bg-tg-hover"><ArrowLeft size={20} className="text-tg-text-secondary" /></button>
-      <button onClick={() => dispatch({ type: 'TOGGLE_PROFILE' })} className="flex items-center gap-3 px-1 hover:bg-tg-hover rounded-lg py-1 transition-colors min-w-0">
+    <div className="flex items-center gap-1 h-[56px] px-1.5 sm:px-2 bg-tg-header border-b border-black/25 flex-shrink-0 min-w-0">
+      <button onClick={() => dispatch({ type: 'SET_ACTIVE_CHAT', chatId: null })} className="icon-btn md:hidden" title="Back"><ArrowLeft size={20} /></button>
+      <button onClick={() => dispatch({ type: 'TOGGLE_PROFILE' })} className="flex items-center gap-2.5 px-1.5 py-1 hover:bg-tg-hover rounded-xl transition-colors min-w-0">
         <div className="relative shrink-0">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm ${chat.type === 'saved' ? 'bg-tg-accent' : getAvatarColor(chat.id)}`}>
+          <div
+            style={{ background: chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : getAvatarColor(chat.id) }}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+          >
             {chat.type === 'saved' ? '🔖' : chat.type === 'group' ? <Users size={18} /> : chat.type === 'channel' ? <Volume2 size={18} /> : getInitials(chat.name)}
           </div>
           {otherUser?.isOnline && !isBot && chat.type === 'private' && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-tg-online rounded-full border-2 border-tg-header" />}
@@ -59,15 +62,15 @@ export function ChatHeader({ chat }: { chat: Chat }) {
         </div>
       ) : (
         <>
-          <button onClick={() => setSearchMode(true)} className="shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Search size={20} className="text-tg-text-secondary" /></button>
+          <button onClick={() => setSearchMode(true)} className="icon-btn" title="Search in chat"><Search size={20} /></button>
           {/* Feature 11: Calendar */}
-          {chat.type === 'channel' && <button onClick={() => dispatch({ type: 'TOGGLE_CALENDAR_VIEWER' })} className="hidden sm:block shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Calendar size={20} className="text-tg-text-secondary" /></button>}
+          {chat.type === 'channel' && <button onClick={() => dispatch({ type: 'TOGGLE_CALENDAR_VIEWER' })} className="icon-btn hidden sm:inline-flex" title="Browse by date"><Calendar size={20} /></button>}
           {chat.type === 'private' && <>
-            <button onClick={() => dispatch({ type: 'START_CALL', chatId: chat.id, callType: 'voice' })} className="shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Phone size={20} className="text-tg-text-secondary" /></button>
-            <button onClick={() => dispatch({ type: 'START_CALL', chatId: chat.id, callType: 'video' })} className="hidden sm:block shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Video size={20} className="text-tg-text-secondary" /></button>
+            <button onClick={() => dispatch({ type: 'START_CALL', chatId: chat.id, callType: 'voice' })} className="icon-btn" title="Voice call"><Phone size={20} /></button>
+            <button onClick={() => dispatch({ type: 'START_CALL', chatId: chat.id, callType: 'video' })} className="icon-btn hidden sm:inline-flex" title="Video call"><Video size={20} /></button>
           </>}
           {/* Group live voice chat */}
-          {chat.type === 'group' && <button onClick={() => dispatch({ type: 'START_VOICE_CHAT', chatId: chat.id })} title="Start Voice Chat" className="shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Volume2 size={20} className="text-tg-text-secondary" /></button>}
+          {chat.type === 'group' && <button onClick={() => dispatch({ type: 'START_VOICE_CHAT', chatId: chat.id })} title="Start Voice Chat" className="icon-btn"><Volume2 size={20} /></button>}
           {/* Private channel: apply to join */}
           {chat.type === 'channel' && !isMember && (
             (chat.pendingJoinRequests || []).includes('user_me')
@@ -78,13 +81,13 @@ export function ChatHeader({ chat }: { chat: Chat }) {
       )}
 
       {/* Feature 8: Bookmarks button */}
-      <button onClick={() => dispatch({ type: 'TOGGLE_BOOKMARKS_VIEW' })} className="hidden sm:block shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Bookmark size={20} className="text-tg-text-secondary" /></button>
+      <button onClick={() => dispatch({ type: 'TOGGLE_BOOKMARKS_VIEW' })} className="icon-btn hidden sm:inline-flex" title="Bookmarks"><Bookmark size={20} /></button>
 
       <div className="relative shrink-0">
-        <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><MoreVertical size={20} className="text-tg-text-secondary" /></button>
+        <button onClick={() => setShowMenu(!showMenu)} className="icon-btn" title="More"><MoreVertical size={20} /></button>
         {showMenu && <>
           <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-          <div className="absolute right-0 top-full mt-1 w-56 bg-tg-sidebar rounded-lg shadow-xl z-50 py-1 border border-black/20">
+          <div className="absolute right-0 top-full mt-1 w-60 card z-50 py-1.5">
             {chat.type === 'group' && <MenuItem icon={<Users size={16} />} label={`${chat.members.length} ${t('members')}`} onClick={() => setShowMenu(false)} />}
             <MenuItem icon={chat.isPinned ? <PinOff size={16} /> : <Pin size={16} />} label={chat.isPinned ? t('unpinChat') : t('pinChat')} onClick={() => { dispatch({ type: 'PIN_CHAT', chatId: chat.id }); setShowMenu(false); }} />
             <MenuItem icon={chat.isMuted ? <Volume2Icon size={16} /> : <VolumeX size={16} />} label={chat.isMuted ? t('unmuteChat') : t('muteChat')} onClick={() => { dispatch({ type: 'MUTE_CHAT', chatId: chat.id }); setShowMenu(false); }} />

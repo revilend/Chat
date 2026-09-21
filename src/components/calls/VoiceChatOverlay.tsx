@@ -35,9 +35,9 @@ export function VoiceChatOverlay() {
           const isActive = activeSpeaker === userId;
           return (
             <div key={userId} className="flex flex-col items-center gap-1 flex-shrink-0">
-              <div className={`relative w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
-                getAvatarColor(userId)
-              } ${isActive ? 'glow-ring ring-2 ring-tg-green' : ''}`}>
+              <div
+                style={{ background: getAvatarColor(userId) }}
+                className={`relative w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-semibold ${isActive ? 'glow-ring ring-2 ring-tg-green' : ''}`}>
                 {getInitials(user?.name || '?')}
                 {isActive && (
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-tg-green rounded-full border-2 border-tg-sidebar" />

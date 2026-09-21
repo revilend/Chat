@@ -151,7 +151,7 @@ export function MiniApp2048() {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-tg-sidebar rounded-2xl shadow-2xl p-4"
+        className="card p-4"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
         onTouchEnd={(e) => {

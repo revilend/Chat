@@ -54,7 +54,7 @@ export function GiftModal() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 max-w-xs w-full relative overflow-hidden"
+        className="card p-4 max-w-xs w-full relative overflow-hidden"
       >
         {sent && (
           <div className="absolute inset-0 flex items-center justify-center z-10">

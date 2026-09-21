@@ -44,7 +44,7 @@ export function QRCodeModal() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-tg-sidebar rounded-2xl shadow-2xl p-6 text-center max-w-xs"
+        className="card p-6 text-center max-w-xs"
       >
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-base font-medium text-tg-text">{t('qrCode')}</h3>

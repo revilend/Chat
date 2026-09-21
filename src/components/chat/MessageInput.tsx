@@ -307,9 +307,9 @@ export function MessageInput({ chat }: Props) {
         </motion.div>}
       </AnimatePresence>
 
-      <div className="flex items-end gap-1 px-2 py-2 min-w-0">
+      <div className="flex items-end gap-1 px-2 py-2 min-w-0 border-t border-black/25 bg-tg-header/60">
         <div className="relative shrink-0">
-          <button onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); setShowQuickReplies(false); }} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Smile size={22} className="text-tg-text-secondary" /></button>
+          <button onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); setShowQuickReplies(false); }} className="icon-btn" title="Emoji and stickers"><Smile size={22} /></button>
           <AnimatePresence>
             {showEmoji && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 p-2 w-[280px] z-50">
               <div className="grid grid-cols-8 gap-0.5 max-h-[200px] overflow-y-auto">{emojiList.map((emoji, i) => <button key={i} onClick={() => { setText(prev => prev + emoji); inputRef.current?.focus(); }} className="w-8 h-8 flex items-center justify-center text-lg hover:bg-tg-hover rounded transition-colors">{emoji}</button>)}</div>
@@ -322,7 +322,7 @@ export function MessageInput({ chat }: Props) {
         </div>
 
         <div className="relative shrink-0">
-          <button onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); setShowQuickReplies(false); }} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Paperclip size={22} className="text-tg-text-secondary" /></button>
+          <button onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); setShowQuickReplies(false); }} className="icon-btn" title="Attach"><Paperclip size={22} /></button>
           <AnimatePresence>
             {showAttach && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 py-1 w-56 z-50">
               {/* Feature 13: Media file picker with confirmation */}
@@ -360,7 +360,7 @@ export function MessageInput({ chat }: Props) {
         </div>
 
         <div className="relative shrink-0">
-          <button onClick={() => { setShowQuickReplies(!showQuickReplies); setShowEmoji(false); setShowAttach(false); }} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Slash size={22} className="text-tg-text-secondary" /></button>
+          <button onClick={() => { setShowQuickReplies(!showQuickReplies); setShowEmoji(false); setShowAttach(false); }} className="icon-btn hidden sm:inline-flex" title="Quick replies"><Slash size={22} /></button>
           <AnimatePresence>
             {showQuickReplies && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 py-1 w-56 z-50">
               {quickReplies.map((r, i) => <button key={i} onClick={() => { setText(r); setShowQuickReplies(false); inputRef.current?.focus(); }} className="w-full text-left px-3 py-2 text-sm text-tg-text hover:bg-tg-hover transition-colors">{r}</button>)}
@@ -369,10 +369,10 @@ export function MessageInput({ chat }: Props) {
         </div>
 
         <div className="flex-1 min-w-0 relative">
-          <textarea ref={inputRef} value={text} onChange={e => { updateText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }} onKeyDown={handleKeyDown} placeholder={t('send')} rows={1} className="w-full bg-tg-input rounded-xl px-4 py-2.5 text-sm text-tg-text placeholder:text-tg-text-secondary outline-none resize-none max-h-[120px]" />
+          <textarea ref={inputRef} value={text} onChange={e => { updateText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }} onKeyDown={handleKeyDown} placeholder={t('send')} rows={1} className="w-full bg-tg-input rounded-2xl px-4 py-2.5 text-[15px] text-tg-text placeholder:text-tg-text-secondary outline-none resize-none max-h-[120px] border border-transparent focus:border-tg-accent/60 transition-colors" />
         </div>
 
-        {text.trim() ? (
+        {text ? (
           <button
             onClick={() => { if (longPressFiredRef.current) { longPressFiredRef.current = false; return; } handleSend(); }}
             onContextMenu={(e) => { e.preventDefault(); handleSendSilent(); }}
@@ -382,12 +382,12 @@ export function MessageInput({ chat }: Props) {
             onTouchStart={startLongPress}
             onTouchEnd={endLongPress}
             title="Send • right-click or long-press to send without sound"
-            className="p-2 rounded-full bg-tg-accent hover:bg-tg-accent-hover transition-colors"
+            className="w-11 h-11 rounded-full bg-tg-accent hover:bg-tg-accent-hover flex items-center justify-center shadow-lg shadow-tg-accent/30"
           >
             <Send size={20} className="text-white" />
           </button>
         ) : (
-          <button onClick={handleVoiceRecord} disabled={!!clip} className={`p-2 rounded-full transition-colors disabled:opacity-40 ${isRecording ? 'bg-tg-red animate-pulse' : 'hover:bg-tg-hover'}`} title="Record voice message"><Mic size={22} className={isRecording ? 'text-white' : 'text-tg-text-secondary'} /></button>
+          <button onClick={handleVoiceRecord} disabled={!!clip} className={`w-11 h-11 rounded-full flex items-center justify-center disabled:opacity-40 shadow-lg ${isRecording ? 'bg-tg-red animate-pulse shadow-tg-red/30' : 'bg-tg-accent hover:bg-tg-accent-hover shadow-tg-accent/30'}`} title="Record voice message"><Mic size={22} className="text-white" /></button>
         )}
       </div>
     </div>

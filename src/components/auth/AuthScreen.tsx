@@ -52,12 +52,17 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="h-full w-full overflow-y-auto bg-tg-bg tg-doodle">
-      <div className="min-h-full flex flex-col lg:flex-row items-stretch">
+    <div className="h-full w-full overflow-y-auto bg-tg-bg tg-doodle relative">
+      {/* Soft brand glow so the first screen does not look like a plain form */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_15%_0%,rgba(51,144,236,0.22),transparent_70%),radial-gradient(45%_45%_at_100%_100%,rgba(143,123,255,0.18),transparent_70%)]" />
+      <div className="relative min-h-full flex flex-col lg:flex-row items-stretch">
         {/* Brand side */}
         <div className="lg:w-[46%] flex flex-col justify-center px-8 py-12 lg:px-16">
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-tg-accent flex items-center justify-center shadow-lg shadow-tg-accent/30">
+            <div
+              style={{ background: 'linear-gradient(140deg, #52b6ff, #3390ec 55%, #2f7fe0)' }}
+              className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl shadow-tg-accent/40 ring-1 ring-white/15"
+            >
               <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
                 <path d="M27 5L3 14.5l6.5 2.4L22 9.5l-9.4 9.1.6 6.9 4-4.6 5.4 4 4.4-19.9Z" fill="white" />
               </svg>
@@ -68,10 +73,10 @@ export function AuthScreen() {
             </div>
           </div>
 
-          <h1 className="mt-10 text-3xl lg:text-4xl font-semibold text-tg-text leading-tight">
+          <h1 className="mt-10 text-[32px] lg:text-[44px] font-semibold text-tg-text leading-[1.08] tracking-tight">
             Talk to real people,
             <br />
-            <span className="text-tg-accent">device to device.</span>
+            <span className="bg-gradient-to-r from-[#52b6ff] to-[#8f7bff] bg-clip-text text-transparent">device to device.</span>
           </h1>
           <p className="mt-4 text-sm text-tg-text-secondary max-w-md leading-relaxed">
             Create an account and you get a personal address. Give it to a friend, they add it, and your
@@ -103,7 +108,7 @@ export function AuthScreen() {
                   key="created"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-tg-sidebar rounded-2xl p-6 shadow-2xl border border-black/20"
+                  className="card p-6 backdrop-blur-xl"
                 >
                   <div className="w-12 h-12 rounded-full bg-tg-green/15 flex items-center justify-center">
                     <Check size={22} className="text-tg-green" />
@@ -121,7 +126,7 @@ export function AuthScreen() {
 
                   <button
                     onClick={copyAddress}
-                    className="mt-3 w-full flex items-center justify-center gap-2 h-10 rounded-lg bg-tg-accent text-white text-sm font-medium hover:bg-tg-accent-hover transition-colors"
+                    className="btn btn-primary mt-3 w-full h-12 rounded-xl"
                   >
                     {copied ? <Check size={16} /> : <Copy size={16} />}
                     {copied ? 'Copied' : 'Copy my address'}
@@ -145,15 +150,15 @@ export function AuthScreen() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   onSubmit={submit}
-                  className="bg-tg-sidebar rounded-2xl p-6 shadow-2xl border border-black/20"
+                  className="card p-6 backdrop-blur-xl"
                 >
-                  <div className="flex gap-1 p-1 rounded-xl bg-tg-input">
+                  <div className="flex gap-1 p-1 rounded-2xl bg-tg-input">
                     {(['signup', 'signin'] as Mode[]).map(m => (
                       <button
                         key={m}
                         type="button"
                         onClick={() => { setMode(m); setError(''); }}
-                        className={`flex-1 h-9 rounded-lg text-sm transition-colors ${mode === m ? 'bg-tg-accent text-white' : 'text-tg-text-secondary hover:text-tg-text'}`}
+                        className={`flex-1 h-10 rounded-xl text-sm font-medium transition-all ${mode === m ? 'bg-tg-accent text-white shadow-md shadow-tg-accent/30' : 'text-tg-text-secondary hover:text-tg-text'}`}
                       >
                         {m === 'signup' ? 'Create account' : 'Sign in'}
                       </button>
@@ -212,7 +217,7 @@ export function AuthScreen() {
                   <button
                     type="submit"
                     disabled={busy}
-                    className="mt-5 w-full h-11 rounded-lg bg-tg-accent text-white text-sm font-medium hover:bg-tg-accent-hover transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="btn btn-primary mt-5 w-full h-12 rounded-xl"
                   >
                     {busy && <Loader2 size={16} className="animate-spin" />}
                     {busy ? 'Deriving your address…' : mode === 'signup' ? 'Create account' : 'Sign in'}
@@ -287,8 +292,8 @@ function Field({ label, value, onChange, placeholder, type = 'text', prefix, tra
 }) {
   return (
     <label className="block">
-      <span className="text-[11px] uppercase tracking-wide text-tg-text-secondary">{label}</span>
-      <div className="mt-1 flex items-center gap-2 bg-tg-input rounded-lg px-3 h-11 focus-within:ring-1 focus-within:ring-tg-accent">
+      <span className="text-[11px] font-medium uppercase tracking-wide text-tg-text-secondary">{label}</span>
+      <div className="mt-1.5 flex items-center gap-2 bg-tg-input rounded-xl px-3.5 h-12 border border-transparent focus-within:border-tg-accent transition-colors">
         {prefix && <span className="text-tg-text-secondary text-sm">{prefix}</span>}
         <input
           type={type}
@@ -296,7 +301,7 @@ function Field({ label, value, onChange, placeholder, type = 'text', prefix, tra
           autoFocus={autoFocus}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-transparent outline-none text-sm text-tg-text placeholder:text-tg-text-secondary"
+          className="flex-1 bg-transparent outline-none text-[15px] text-tg-text placeholder:text-tg-text-secondary"
         />
         {trailing}
       </div>

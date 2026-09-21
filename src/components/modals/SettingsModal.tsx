@@ -17,7 +17,7 @@ export function SettingsModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md h-full md:h-[90vh] md:max-h-[600px] bg-tg-sidebar rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md h-full md:h-[90vh] md:max-h-[600px] card rounded-none md:rounded-2xl overflow-hidden flex flex-col">
         <div className="flex items-center gap-3 px-4 h-[56px] border-b border-black/20 flex-shrink-0">
           <button onClick={() => section === 'main' ? dispatch({ type: 'TOGGLE_SETTINGS' }) : setSection('main')} className="p-1"><X size={20} className="text-tg-text-secondary" /></button>
           <h2 className="text-base font-medium text-tg-text">{section === 'main' ? t('settings') : section === 'privacy' ? t('privacy') : section === 'language' ? t('language') : section === 'passcode' ? t('passcode') : section === 'theme' ? t('theme') : section === 'permissions' ? 'Group Permissions' : section === 'announcements' ? 'Announcements' : section === 'moderation' ? 'Auto-Moderation' : t('theme')}</h2>

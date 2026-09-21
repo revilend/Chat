@@ -27,7 +27,7 @@ export function ProfileModal() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md h-full md:h-[90vh] md:max-h-[600px] bg-tg-sidebar rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-md h-full md:h-[90vh] md:max-h-[600px] card rounded-none md:rounded-2xl overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 h-[56px] border-b border-black/20 flex-shrink-0">
@@ -41,7 +41,7 @@ export function ProfileModal() {
           {/* Avatar */}
           <div className="flex flex-col items-center py-6 bg-tg-input/50">
             <div className="relative">
-              <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-semibold ${getAvatarColor(state.currentUser.id)}`}>
+              <div style={{ background: getAvatarColor(state.currentUser.id) }} className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-semibold">
                 {getInitials(state.currentUser.name)}
               </div>
               <button className="absolute bottom-0 right-0 w-8 h-8 bg-tg-accent rounded-full flex items-center justify-center border-2 border-tg-sidebar">

@@ -84,7 +84,7 @@ export function ContactsModal() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md h-full md:h-[90vh] md:max-h-[640px] bg-tg-sidebar rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-md h-full md:h-[90vh] md:max-h-[640px] card rounded-none md:rounded-2xl overflow-hidden flex flex-col"
       >
         <div className="flex items-center gap-3 px-4 h-[56px] border-b border-black/20 flex-shrink-0">
           <button onClick={() => dispatch({ type: 'TOGGLE_CONTACTS' })} className="p-1">
@@ -123,7 +123,7 @@ export function ContactsModal() {
             return (
               <div key={userId} className="flex items-center gap-3 px-3 py-2 hover:bg-tg-hover transition-colors">
                 <div className="relative">
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm ${getAvatarColor(userId)}`}>
+                  <div style={{ background: getAvatarColor(userId) }} className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                     {getInitials(user!.name)}
                   </div>
                   {online && <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-tg-green border-2 border-tg-sidebar" />}

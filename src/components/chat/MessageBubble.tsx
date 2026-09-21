@@ -6,11 +6,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CodeBlock, ParticleExplosion, TagInput, UnitConverterCard, CaseConverterPopup } from '../features/AdvancedFeatures';
 import { PhotoView, VideoView, VideoNoteView, FileView, VoiceView, MusicView, LinkPreviewCard } from './MediaViews';
 
-interface Props { message: Message; isGrouped: boolean; isSelected: boolean; }
+interface Props {
+  message: Message;
+  /** Same sender as the message above, within a minute. */
+  isGrouped: boolean;
+  /** Last message of that run — this one carries the bubble's "tail" corner. */
+  isLast?: boolean;
+  isSelected: boolean;
+}
 
 const quickReactions = ['👍', '❤️', '🔥', '😂', '👏', '⚡'];
 
-export function MessageBubble({ message, isGrouped, isSelected }: Props) {
+export function MessageBubble({ message, isGrouped, isLast, isSelected }: Props) {
   const { state, dispatch, getUser, t, deliverDelete } = useApp();
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
@@ -44,6 +51,9 @@ export function MessageBubble({ message, isGrouped, isSelected }: Props) {
   const hasCodeBlock = /```/.test(message.text);
   const textWithoutCode = message.text.replace(/```[\s\S]*?```/g, '').trim();
 
+  // Media messages sit flush in the bubble; captions keep the normal padding.
+  const hasOwnText = Boolean(message.text?.trim()) || !['photo', 'video', 'music', 'file', 'location'].includes(message.type);
+
   // Feature 4: Trigger particles
   const triggerParticles = (emoji: string, e: React.MouseEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -65,16 +75,16 @@ export function MessageBubble({ message, isGrouped, isSelected }: Props) {
       <div className={`relative max-w-[85%] sm:max-w-[420px] ${isMe ? 'ml-auto' : 'mr-auto'}`}>
         {isSelected && <div className="absolute inset-0 bg-tg-accent/20 rounded-xl z-10 border-2 border-tg-accent" />}
 
-        <div className={`relative bubble px-3 py-1.5 ${isMe ? 'bg-tg-outgoing text-white' : 'bg-tg-incoming text-tg-text'} ${message.isPinned ? 'ring-1 ring-tg-accent/50' : ''}`}
+        <div className={`relative bubble ${hasOwnText ? 'px-2.5 py-1.5' : 'p-1'} ${isMe ? 'bg-tg-outgoing text-white' : 'bg-tg-incoming text-tg-text'} ${isLast ? (isMe ? 'bubble-tail-out' : 'bubble-tail-in') : ''} ${message.isPinned ? 'ring-1 ring-tg-accent/60' : ''}`}
           onClick={() => { if (state.selectedMessages.length > 0) dispatch({ type: 'SELECT_MESSAGE', messageId: message.id }); }}
           onContextMenu={(e) => { e.preventDefault(); setShowContextMenu(true); }}>
 
           {message.postedAsGroup && !isMe && <div className="flex items-center gap-1 text-[11px] text-tg-accent mb-0.5">📢 {state.chats.find(c => c.id === message.chatId)?.name}</div>}
-          {!isGrouped && !isMe && !message.postedAsGroup && <div className="text-xs font-medium text-tg-accent mb-0.5">{senderName}{user?.emojiStatus && ` ${user.emojiStatus}`}</div>}
+          {!isGrouped && !isMe && !message.postedAsGroup && <div className="text-[13px] font-semibold text-tg-accent mb-0.5">{senderName}{user?.emojiStatus && ` ${user.emojiStatus}`}</div>}
 
           {!isMe && !message.postedAsGroup && (() => { const chat = state.chats.find(c => c.id === message.chatId); const title = chat?.adminTitles?.[message.senderId]; if (!title) return null; return <div className="text-[10px] text-tg-accent/70 mb-0.5">{title}</div>; })()}
 
-          {message.replyTo && (() => { const rm = state.messages.find(m => m.id === message.replyTo); if (!rm) return null; return <div className="bg-black/10 rounded-lg px-2 py-1 mb-1 border-l-2 border-tg-accent"><div className="text-[11px] font-medium text-tg-accent">{getUser(rm.senderId)?.name || 'Unknown'}</div><div className="text-[11px] text-tg-text-secondary truncate">{rm.text}</div></div>; })()}
+          {message.replyTo && (() => { const rm = state.messages.find(m => m.id === message.replyTo); if (!rm) return null; return <div className="bg-black/20 rounded-lg px-2 py-1 mb-1.5 border-l-2 border-tg-accent"><div className="text-[11px] font-medium text-tg-accent">{getUser(rm.senderId)?.name || 'Unknown'}</div><div className="text-[11px] text-tg-text-secondary truncate">{rm.text}</div></div>; })()}
           {message.forwardedFrom && <div className="flex items-center gap-1 text-[11px] text-tg-accent mb-1"><Forward size={12} /> Forwarded</div>}
 
           {message.viewOnce && !message.viewOnceOpened && !viewOnceBurnt ? (
@@ -139,20 +149,20 @@ export function MessageBubble({ message, isGrouped, isSelected }: Props) {
             </div>
           ) : null}
 
-          <div className="flex items-center justify-end gap-1 mt-0.5">
+          <div className={`flex items-center justify-end gap-1 ${hasOwnText ? 'mt-0.5' : 'mt-1 px-1'} select-none`}>
             {message.editedAt && <span className={`text-[10px] ${isMe ? 'text-white/50' : 'text-tg-text-secondary'}`}>edited</span>}
             {message.scheduledAt && <span className="text-[10px] text-amber-400" title="Scheduled message">🕐 {formatTime(message.scheduledAt)}</span>}
             {message.sendWhenOnline && <span className="text-[10px]" title="Queued until the recipient is online">⏳</span>}
             {isMe && message.deliveryPending && !message.sendWhenOnline && <span className="text-[10px] opacity-80" title="Not delivered yet — will send when they are reachable">🕓</span>}
             {message.sentWithoutSound && <span className="text-[10px]" title="Sent without sound">🔇</span>}
-            <span className={`text-[11px] ${isMe ? 'text-tg-text-time-out' : 'text-tg-text-time-in'}`}>{formatTime(message.timestamp)}</span>
+            <span className={`text-[11px] tabular-nums ${isMe ? 'text-tg-text-time-out' : 'text-tg-text-time-in'}`}>{formatTime(message.timestamp)}</span>
             {isMe && (message.readBy.length > 1 ? <CheckCheck size={14} className="text-tg-accent" /> : <Check size={14} className="text-white/50" />)}
           </div>
 
           {message.reactions && Object.keys(message.reactions).length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {Object.entries(message.reactions).map(([emoji, users]) => (
-                <button key={emoji} onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_REACTION', messageId: message.id, emoji }); triggerParticles(emoji, e); }} className={`flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs ${users.includes('user_me') ? 'bg-tg-accent/30 border border-tg-accent/50' : 'bg-black/10 border border-transparent'}`}>
+                <button key={emoji} onClick={(e) => { e.stopPropagation(); dispatch({ type: 'TOGGLE_REACTION', messageId: message.id, emoji }); triggerParticles(emoji, e); }} className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors hover:scale-105 ${users.includes('user_me') ? 'bg-tg-accent/35 ring-1 ring-tg-accent/50' : 'bg-black/20'}`}>
                   <span>{emoji}</span><span className={isMe ? 'text-white/70' : 'text-tg-text-secondary'}>{users.length}</span>
                 </button>
               ))}
@@ -164,7 +174,7 @@ export function MessageBubble({ message, isGrouped, isSelected }: Props) {
         <AnimatePresence>
           {showContextMenu && (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className={`absolute z-50 ${isMe ? 'right-0' : 'left-0'} bottom-full mb-1`}>
-              <div className="bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 overflow-hidden w-48">
+              <div className="card w-52 overflow-hidden py-1">
                 <div className="flex items-center justify-center gap-1 px-2 py-2 border-b border-black/20">
                   {quickReactions.map(emoji => <button key={emoji} onClick={(e) => { dispatch({ type: 'TOGGLE_REACTION', messageId: message.id, emoji }); triggerParticles(emoji, e); setShowContextMenu(false); }} className="text-lg hover:scale-125 transition-transform p-0.5">{emoji}</button>)}
                 </div>

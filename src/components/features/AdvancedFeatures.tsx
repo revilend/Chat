@@ -143,7 +143,7 @@ export function BookmarksDrawer() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-16" onClick={() => dispatch({ type: 'TOGGLE_BOOKMARKS_VIEW' })}>
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} onClick={e => e.stopPropagation()} className="card w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-black/20">
           <h3 className="text-base font-medium text-tg-text flex items-center gap-2"><Bookmark size={18} /> Bookmarks & Tags</h3>
           <button onClick={() => dispatch({ type: 'TOGGLE_BOOKMARKS_VIEW' })}><X size={18} className="text-tg-text-secondary" /></button>
@@ -288,7 +288,7 @@ export function CalendarViewer() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => dispatch({ type: 'TOGGLE_CALENDAR_VIEWER' })}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="card p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); }} className="p-1 hover:bg-tg-hover rounded">◀</button>
           <h3 className="text-sm font-medium text-tg-text">{monthNames[month]} {year}</h3>
@@ -447,7 +447,7 @@ export function MediaConfirmModal() {
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => dispatch({ type: 'CANCEL_SEND_MEDIA' })}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="bg-tg-sidebar rounded-2xl shadow-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} onClick={e => e.stopPropagation()} className="card p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
         <h3 className="text-base font-medium text-tg-text mb-3">Confirm Send</h3>
         <div className="space-y-2 mb-4">
           {state.pendingMediaFiles.map((f, i) => (
