@@ -76,9 +76,9 @@ export function Sidebar() {
   const totalUnread = state.chats.reduce((sum, c) => sum + (c.isArchived ? 0 : c.unreadCount), 0);
 
   return (
-    <div className="h-full flex flex-col bg-tg-sidebar relative">
+    <div className="h-full flex flex-col bg-tg-sidebar sidebar-surface relative">
       {/* Header */}
-      <div className="flex items-center gap-2 px-2.5 py-2.5 h-[60px]">
+      <div className="glass-bar flex items-center gap-2 px-2.5 py-2.5 h-[60px] flex-shrink-0">
         <button
           onClick={() => setShowMenu(!showMenu)}
           className="icon-btn"
@@ -87,7 +87,7 @@ export function Sidebar() {
           {showMenu ? <X size={20} /> : <Menu size={20} />}
         </button>
 
-        <div className={`flex-1 flex items-center bg-tg-input rounded-2xl px-3.5 h-11 transition-all ${searchFocused ? 'ring-2 ring-tg-accent/60 bg-tg-hover' : ''}`}>
+        <div className={`flex-1 flex items-center bg-tg-input rounded-full px-4 h-10 transition-all ${searchFocused ? 'ring-2 ring-tg-accent/60' : 'ring-1 ring-white/5'}`}>
           <Search size={17} className="text-tg-text-secondary mr-2.5 flex-shrink-0" />
           <input
             type="text"
@@ -114,9 +114,9 @@ export function Sidebar() {
             <button
               key={folder.id}
               onClick={() => dispatch({ type: 'SET_ACTIVE_FOLDER', folder: folder.id })}
-              className={`flex items-center gap-1.5 px-3 h-8 rounded-full text-[13px] font-medium whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 h-8 rounded-full text-[13px] font-medium whitespace-nowrap transition-all ${
                 state.activeFolder === folder.id
-                  ? 'bg-tg-accent text-white shadow-md shadow-tg-accent/25'
+                  ? 'bg-tg-accent text-white shadow-md shadow-tg-accent/30'
                   : 'text-tg-text-secondary hover:bg-tg-hover hover:text-tg-text'
               }`}
             >

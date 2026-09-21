@@ -125,18 +125,20 @@ export function ContactsModal() {
             return (
               <div key={userId} className="flex items-center gap-3 px-3 py-2 hover:bg-tg-hover transition-colors">
                 <div className="relative">
-                  <div style={{ background: getAvatarColor(userId) }} className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                  <div style={{ background: getAvatarColor(user!.name || userId) }} className="avatar-sheen w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                     {getInitials(user!.name)}
                   </div>
-                  {online && <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-tg-green border-2 border-tg-sidebar" />}
+                  {online && <span className="online-dot absolute bottom-0 right-0 w-3 h-3 rounded-full" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-tg-text flex items-center gap-1">
                     {user!.name}
                     {user!.emojiStatus && <span>{user!.emojiStatus}</span>}
                   </div>
-                  <div className="text-xs text-tg-text-secondary">
-                    {online ? <span className="text-tg-green">{t('online')}</span> : user!.username ? `@${user!.username}` : 'offline'}
+                  <div className="text-[13px] text-tg-text-secondary">
+                    {online
+                      ? <span className="text-tg-online">{t('online')}</span>
+                      : user!.username ? `@${user!.username}` : 'offline'}
                   </div>
                 </div>
                 <div className="flex items-center gap-1">

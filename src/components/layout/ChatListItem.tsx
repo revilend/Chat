@@ -6,8 +6,8 @@ function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-// Telegram-style avatars: a flat, saturated colour picked from the address, with
-// a soft diagonal sheen so the circle does not read as a plain block.
+// Telegram's own avatar gradients — red, orange, violet, sky, green, pink, lime,
+// amber. The pick is derived from the name, so one person keeps one colour.
 const avatarPalette = [
   'linear-gradient(135deg, #ff885e, #ff516a)',
   'linear-gradient(135deg, #ffcd6a, #ffa85c)',
@@ -21,9 +21,9 @@ const avatarPalette = [
   'linear-gradient(135deg, #9be36b, #5fc23a)',
 ];
 
-function getAvatarColor(id: string): string {
+function getAvatarColor(seed: string): string {
   let hash = 0;
-  for (const c of id) hash = ((hash << 5) - hash + c.charCodeAt(0)) | 0;
+  for (const c of seed) hash = ((hash << 5) - hash + c.charCodeAt(0)) | 0;
   return avatarPalette[Math.abs(hash) % avatarPalette.length];
 }
 
@@ -58,15 +58,18 @@ export function ChatListItem({ chat }: { chat: Chat }) {
       onContextMenu={(e) => {
         e.preventDefault();
       }}
-      className={`w-full flex items-center gap-3 px-2.5 py-2 text-left rounded-xl transition-colors ${
-        isActive ? 'bg-tg-accent text-white' : 'hover:bg-tg-hover active:bg-tg-hover'
+      className={`w-full flex items-center gap-3 px-2.5 py-2.5 text-left rounded-2xl transition-all ${
+        isActive
+          ? 'text-white shadow-lg'
+          : 'hover:bg-tg-hover active:bg-tg-hover'
       }`}
+      style={isActive ? { background: 'linear-gradient(150deg, #3a9bea 0%, #2b86d6 60%, #2478c4 100%)', boxShadow: '0 8px 22px rgba(36, 129, 204, 0.32)' } : undefined}
     >
       {/* Avatar */}
       <div className="relative flex-shrink-0">
         <div
-          style={{ background: chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : getAvatarColor(chat.id) }}
-          className="w-[54px] h-[54px] rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-sm"
+          style={{ background: chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : getAvatarColor(chat.name || chat.id) }}
+          className="avatar-sheen w-[54px] h-[54px] rounded-full flex items-center justify-center text-white font-semibold text-lg"
         >
           {chat.type === 'saved' ? (
             <Bookmark size={24} fill="white" />
@@ -79,7 +82,7 @@ export function ChatListItem({ chat }: { chat: Chat }) {
           )}
         </div>
         {isOnline && !isBot && (
-          <div className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-tg-online rounded-full border-2 border-tg-sidebar" />
+          <div className="online-dot absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full" />
         )}
       </div>
 

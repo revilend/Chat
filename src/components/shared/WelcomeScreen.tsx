@@ -29,7 +29,10 @@ export function WelcomeScreen() {
     <div className="h-full flex items-center justify-center bg-tg-bg tg-doodle px-6 overflow-y-auto">
       <div className="max-w-md w-full py-10">
         <div className="flex flex-col items-center text-center">
-          <div className="w-20 h-20 rounded-full bg-tg-accent flex items-center justify-center shadow-lg shadow-tg-accent/25">
+          <div
+            style={{ background: 'linear-gradient(140deg, #57bcff, #3390ec 55%, #1f7fd6)', boxShadow: '0 16px 40px rgba(51,144,236,0.42), inset 0 1px 0 rgba(255,255,255,0.3)' }}
+            className="w-20 h-20 rounded-3xl flex items-center justify-center"
+          >
             <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
               <path d="M27 5L3 14.5l6.5 2.4L22 9.5l-9.4 9.1.6 6.9 4-4.6 5.4 4 4.4-19.9Z" fill="white" />
             </svg>
@@ -43,14 +46,14 @@ export function WelcomeScreen() {
         </div>
 
         {/* ID card */}
-        <div className="mt-7 rounded-2xl bg-tg-sidebar border border-black/20 p-4 shadow-xl">
+        <div className="mt-7 card p-4">
           <div className="text-[11px] uppercase tracking-wide text-tg-text-secondary">Your ID</div>
           <div className="mt-1.5 text-center font-mono text-[34px] leading-tight tracking-[0.18em] text-tg-text">
             {formatUserId(address)}
           </div>
           <button
             onClick={copyAddress}
-            className="mt-3 w-full h-10 rounded-lg bg-tg-accent text-white text-sm font-medium hover:bg-tg-accent-hover transition-colors flex items-center justify-center gap-2"
+            className="btn btn-primary mt-3 w-full h-11 rounded-xl text-sm"
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? 'Copied' : 'Copy my ID'}
@@ -59,12 +62,10 @@ export function WelcomeScreen() {
             Send these six digits to a friend. When they add them under Contacts, their chat appears here and
             your messages travel straight between your two devices.
           </p>
-        </div>
-
-        <div className="mt-4 grid gap-2">
+        </div>          <div className="mt-4 grid gap-2">
           <button
             onClick={() => dispatch({ type: 'TOGGLE_CONTACTS' })}
-            className="flex items-center gap-3 rounded-xl bg-tg-sidebar border border-black/20 px-4 py-3 hover:bg-tg-hover transition-colors text-left"
+            className="flex items-center gap-3 rounded-2xl bg-tg-sidebar/80 backdrop-blur-sm border border-white/5 px-4 py-3 hover:bg-tg-hover transition-colors text-left"
           >
             <UserPlus size={18} className="text-tg-accent" />
             <span className="flex-1">
@@ -74,7 +75,7 @@ export function WelcomeScreen() {
           </button>
           <button
             onClick={() => dispatch({ type: 'SET_ACTIVE_CHAT', chatId: 'chat_saved' })}
-            className="flex items-center gap-3 rounded-xl bg-tg-sidebar border border-black/20 px-4 py-3 hover:bg-tg-hover transition-colors text-left"
+            className="flex items-center gap-3 rounded-2xl bg-tg-sidebar/80 backdrop-blur-sm border border-white/5 px-4 py-3 hover:bg-tg-hover transition-colors text-left"
           >
             <Bookmark size={18} className="text-tg-accent" />
             <span className="flex-1">
@@ -82,7 +83,7 @@ export function WelcomeScreen() {
               <span className="block text-[11px] text-tg-text-secondary">Your private notebook — notes, links, files</span>
             </span>
           </button>
-          <div className="flex items-start gap-3 rounded-xl bg-tg-sidebar border border-black/20 px-4 py-3">
+          <div className="flex items-start gap-3 rounded-2xl bg-tg-sidebar/80 backdrop-blur-sm border border-white/5 px-4 py-3">
             <Sparkles size={18} className="text-tg-accent mt-0.5" />
             <span>
               <span className="block text-sm text-tg-text">Everything else is real too</span>

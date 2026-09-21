@@ -71,7 +71,7 @@ export function MessageBubble({ message, isGrouped, isLast, isSelected }: Props)
   };
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isGrouped ? 'mt-0.5' : 'mt-3'} group`} ref={contextRef}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isGrouped ? 'bubble-run' : 'mt-3'} group`} ref={contextRef}>
       <div className={`relative max-w-[85%] sm:max-w-[420px] ${isMe ? 'ml-auto' : 'mr-auto'}`}>
         {/* Floating quick actions, only where there is room beside the bubble */}
         <div className={`hidden md:flex absolute top-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity z-20 ${isMe ? 'right-full mr-2' : 'left-full ml-2'}`}>
@@ -91,14 +91,14 @@ export function MessageBubble({ message, isGrouped, isLast, isSelected }: Props)
             title="More"
           ><MoreHorizontal size={15} className="text-tg-text-secondary" /></button>
         </div>
-        {isSelected && <div className="absolute inset-0 bg-tg-accent/20 rounded-xl z-10 border-2 border-tg-accent" />}
+        {isSelected && <div className="absolute inset-0 bg-tg-accent/20 rounded-[18px] z-10 border-2 border-tg-accent" />}
 
-        <div className={`relative bubble ${hasOwnText ? 'px-2.5 py-1.5' : 'p-1'} ${isMe ? 'bg-tg-outgoing text-white' : 'bg-tg-incoming text-tg-text'} ${isLast ? (isMe ? 'bubble-tail-out' : 'bubble-tail-in') : ''} ${message.isPinned ? 'ring-1 ring-tg-accent/60' : ''}`}
+        <div className={`relative bubble ${hasOwnText ? 'px-3 py-[7px]' : 'p-1'} ${isMe ? 'bubble-out' : 'bubble-in'} ${isLast ? (isMe ? 'bubble-tail-out' : 'bubble-tail-in') : ''} ${message.isPinned ? 'ring-1 ring-tg-accent/60' : ''}`}
           onClick={() => { if (state.selectedMessages.length > 0) dispatch({ type: 'SELECT_MESSAGE', messageId: message.id }); }}
           onContextMenu={(e) => { e.preventDefault(); setShowContextMenu(true); }}>
 
           {message.postedAsGroup && !isMe && <div className="flex items-center gap-1 text-[11px] text-tg-accent mb-0.5">📢 {state.chats.find(c => c.id === message.chatId)?.name}</div>}
-          {!isGrouped && !isMe && !message.postedAsGroup && <div className="text-[13px] font-semibold text-tg-accent mb-0.5">{senderName}{user?.emojiStatus && ` ${user.emojiStatus}`}</div>}
+          {!isGrouped && !isMe && !message.postedAsGroup && <div className="text-[13.5px] font-semibold mb-0.5" style={{ color: 'var(--color-tg-accent)' }}>{senderName}{user?.emojiStatus && ` ${user.emojiStatus}`}</div>}
 
           {!isMe && !message.postedAsGroup && (() => { const chat = state.chats.find(c => c.id === message.chatId); const title = chat?.adminTitles?.[message.senderId]; if (!title) return null; return <div className="text-[10px] text-tg-accent/70 mb-0.5">{title}</div>; })()}
 
@@ -167,7 +167,7 @@ export function MessageBubble({ message, isGrouped, isLast, isSelected }: Props)
             </div>
           ) : null}
 
-          <div className={`flex items-center justify-end gap-1 ${hasOwnText ? 'mt-0.5' : 'mt-1 px-1'} select-none`}>
+          <div className={`flex items-center justify-end gap-1 ${hasOwnText ? 'mt-[3px] -mb-px' : 'mt-1 px-1'} select-none`}>
             {message.editedAt && <span className={`text-[10px] ${isMe ? 'text-white/50' : 'text-tg-text-secondary'}`}>edited</span>}
             {message.scheduledAt && <span className="text-[10px] text-amber-400" title="Scheduled message">🕐 {formatTime(message.scheduledAt)}</span>}
             {message.sendWhenOnline && <span className="text-[10px]" title="Queued until the recipient is online">⏳</span>}
@@ -178,7 +178,10 @@ export function MessageBubble({ message, isGrouped, isLast, isSelected }: Props)
             )}
             {message.sentWithoutSound && <span className="text-[10px]" title="Sent without sound">🔇</span>}
             <span className={`text-[11px] tabular-nums ${isMe ? 'text-tg-text-time-out' : 'text-tg-text-time-in'}`}>{formatTime(message.timestamp)}</span>
-            {isMe && (message.readBy.length > 1 ? <CheckCheck size={14} className="text-tg-accent" /> : <Check size={14} className="text-white/50" />)}
+            {/* Telegram's read ticks: bright on an outgoing bubble, muted otherwise */}
+            {isMe && (message.readBy.length > 1
+              ? <CheckCheck size={15} strokeWidth={2.4} className="text-[#bfe3ff]" />
+              : <Check size={15} strokeWidth={2.4} className="text-white/55" />)}
           </div>
 
           {message.reactions && Object.keys(message.reactions).length > 0 && (

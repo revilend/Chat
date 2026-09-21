@@ -249,22 +249,35 @@ export function VoiceView({ messageId }: { messageId: string }) {
     : clockTime(duration);
 
   return (
-    <div className="flex items-center gap-2 py-1 min-w-[210px] max-w-full">
+    <div className="flex items-center gap-2.5 py-1 min-w-[210px] max-w-full">
       {url && <audio ref={audioRef} src={url} preload="metadata" />}
-      <button onClick={toggle} disabled={!hasAudio} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50 ${isMe ? 'bg-white/20' : 'bg-tg-accent'}`} title={playing ? 'Pause' : 'Play voice message'}>
-        {playing ? <Pause size={16} className="text-white" /> : <Play size={16} className="text-white ml-0.5" />}
+      {/* Round glossy play button, like the real client */}
+      <button
+        onClick={toggle}
+        disabled={!hasAudio}
+        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50 ${isMe ? '' : 'bg-tg-accent'}`}
+        style={isMe
+          ? { background: 'linear-gradient(160deg, rgba(255,255,255,0.34), rgba(255,255,255,0.14))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)' }
+          : { background: 'linear-gradient(160deg, #57bcff, #3390ec 55%, #1f7fd6)', boxShadow: '0 3px 10px rgba(51,144,236,0.4), inset 0 1px 0 rgba(255,255,255,0.35)' }}
+        title={playing ? 'Pause' : 'Play voice message'}
+      >
+        {playing ? <Pause size={17} className="text-white" /> : <Play size={17} className="text-white ml-0.5" />}
       </button>
       <div className="flex-1 min-w-0">
-        <div className="flex items-end gap-[2px] h-6 cursor-pointer" onClick={seek}>
-          {waveform.slice(0, 32).map((v, i) => (
-            <div
-              key={i}
-              className={`w-[3px] rounded-full ${isMe ? 'bg-white/40' : 'bg-tg-accent/40'} ${i / 32 <= progress ? (isMe ? 'bg-white' : 'bg-tg-accent') : ''}`}
-              style={{ height: `${Math.max(3, v * 24)}px` }}
-            />
-          ))}
+        {/* A real waveform measured from the recording: the played part lights up. */}
+        <div className="flex items-center gap-[2px] h-7 cursor-pointer" onClick={seek}>
+          {waveform.slice(0, 32).map((v, i) => {
+            const played = i / Math.max(1, Math.min(32, waveform.length)) <= progress;
+            return (
+              <div
+                key={i}
+                className={`w-[2.5px] rounded-full transition-colors ${played ? 'bg-white' : isMe ? 'bg-white/35' : 'bg-tg-accent/35'}`}
+                style={{ height: `${Math.max(3, v * 26)}px` }}
+              />
+            );
+          })}
         </div>
-        <div className={`text-[10px] mt-0.5 flex items-center gap-1 ${isMe ? 'text-white/60' : 'text-tg-text-secondary'}`}>
+        <div className={`text-[10px] mt-1 flex items-center gap-1 ${isMe ? 'text-white/65' : 'text-tg-text-secondary'}`}>
           <span className="tabular-nums">{shown}</span>
           {message?.voiceEffect && message.voiceEffect !== 'normal' && <span>• {message.voiceEffect}</span>}
           {!hasAudio && <span>• audio not stored</span>}
@@ -276,7 +289,7 @@ export function VoiceView({ messageId }: { messageId: string }) {
           <button
             key={value}
             onClick={(e) => { e.stopPropagation(); changeSpeed(value); }}
-            className={`text-[10px] px-1.5 py-0.5 rounded tabular-nums ${speed === value ? 'bg-tg-accent text-white' : (isMe ? 'bg-white/10 text-white/60' : 'bg-black/10 text-tg-text-secondary')}`}
+            className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums transition-colors ${speed === value ? 'bg-tg-accent text-white shadow-sm' : (isMe ? 'bg-white/10 text-white/70' : 'bg-black/20 text-tg-text-secondary')}`}
             title={`Play at ${value}x`}
           >
             {value}x

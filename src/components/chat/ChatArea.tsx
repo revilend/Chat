@@ -94,8 +94,10 @@ export function ChatArea() {
 
   if (!chat) return null;
 
+  // `backgroundColor` (not the `background` shorthand) so the doodle pattern of
+  // `.tg-doodle` survives underneath a per-chat wallpaper.
   return (
-    <div className="h-full flex flex-col tg-doodle" style={{ background: chat.wallpaper || '#0e1621' }}>
+    <div className="h-full flex flex-col tg-doodle" style={{ backgroundColor: chat.wallpaper || undefined }}>
       <ChatHeader chat={chat} />
       {/* Forum topics */}
       {chat.isForum && chat.topics && chat.topics.length > 0 && (
@@ -123,8 +125,8 @@ export function ChatArea() {
       <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-2.5 sm:px-4 md:px-[10%] lg:px-[16%] py-3">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-tg-text-secondary">
-            <div className="w-16 h-16 rounded-full bg-tg-sidebar/70 flex items-center justify-center text-3xl mb-3 shadow-sm">💬</div>
-            <div className="text-sm">No messages yet</div>
+            <div className="w-16 h-16 rounded-full bg-tg-sidebar/70 backdrop-blur-sm border border-white/5 flex items-center justify-center text-3xl mb-3 shadow-lg">💬</div>
+            <div className="text-sm text-tg-text">No messages yet</div>
             <div className="text-xs mt-1 opacity-70">Say hello to start the history</div>
           </div>
         )}
@@ -157,7 +159,7 @@ function MessageList({ messages }: { messages: Message[] }) {
   const elements: React.ReactNode[] = [];
   messages.forEach((msg, i) => {
     const date = new Date(msg.timestamp).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
-    if (date !== lastDate) { lastDate = date;      elements.push(<div key={`date-${date}`} className="flex justify-center my-3"><span className="bg-black/30 text-tg-text-secondary text-[11px] font-medium px-3 py-1 rounded-full backdrop-blur-sm">{isToday(new Date(msg.timestamp)) ? 'Today' : isYesterday(new Date(msg.timestamp)) ? 'Yesterday' : date}</span></div>); }
+    if (date !== lastDate) { lastDate = date;      elements.push(            <div key={`date-${date}`} className="flex justify-center my-3"><span className="bg-black/35 text-tg-text-secondary text-[11px] font-medium px-3 py-1 rounded-full backdrop-blur-md border border-white/5">{isToday(new Date(msg.timestamp)) ? 'Today' : isYesterday(new Date(msg.timestamp)) ? 'Yesterday' : date}</span></div>); }
     const previous = messages[i - 1];
     const next = messages[i + 1];
     const isGroup = i > 0 && previous.senderId === msg.senderId && msg.timestamp - previous.timestamp < 60000;

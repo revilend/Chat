@@ -31,21 +31,21 @@ export function ChatHeader({ chat }: { chat: Chat }) {
   };
 
   return (
-    <div className="flex items-center gap-1 h-[56px] px-1.5 sm:px-2 bg-tg-header border-b border-black/25 flex-shrink-0 min-w-0">
+    <div className="glass-bar glass-header flex items-center gap-1 h-[58px] px-1.5 sm:px-2 flex-shrink-0 min-w-0 z-20">
       <button onClick={() => dispatch({ type: 'SET_ACTIVE_CHAT', chatId: null })} className="icon-btn md:hidden" title="Back"><ArrowLeft size={20} /></button>
       <button onClick={() => dispatch({ type: 'TOGGLE_PROFILE' })} className="flex items-center gap-2.5 px-1.5 py-1 hover:bg-tg-hover rounded-xl transition-colors min-w-0">
         <div className="relative shrink-0">
           <div
-            style={{ background: chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : getAvatarColor(chat.id) }}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+            style={{ background: chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : getAvatarColor(chat.name || chat.id) }}
+            className="avatar-sheen w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
           >
             {chat.type === 'saved' ? '🔖' : chat.type === 'group' ? <Users size={18} /> : chat.type === 'channel' ? <Volume2 size={18} /> : getInitials(chat.name)}
           </div>
-          {otherUser?.isOnline && !isBot && chat.type === 'private' && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-tg-online rounded-full border-2 border-tg-header" />}
+          {otherUser?.isOnline && !isBot && chat.type === 'private' && <div className="online-dot absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full" />}
         </div>
         <div className="text-left min-w-0">
-          <div className="text-sm font-medium text-tg-text flex items-center gap-1 truncate">{chat.name}{isBot && <span className="text-tg-accent text-xs">🤖</span>}</div>
-          <div className={`text-xs truncate ${otherUser?.isOnline ? 'text-tg-accent' : 'text-tg-text-secondary'}`}>{getStatusText()}</div>
+          <div className="text-[15px] font-semibold text-tg-text flex items-center gap-1 truncate">{chat.name}{isBot && <span className="text-tg-accent text-xs">🤖</span>}</div>
+          <div className={`text-[13px] truncate ${otherUser?.isOnline ? 'text-tg-online' : chat.isTyping ? 'text-tg-accent' : 'text-tg-text-secondary'}`}>{getStatusText()}</div>
         </div>
       </button>
 
@@ -75,7 +75,7 @@ export function ChatHeader({ chat }: { chat: Chat }) {
           {chat.type === 'channel' && !isMember && (
             (chat.pendingJoinRequests || []).includes('user_me')
               ? <span className="px-3 py-1 text-xs text-amber-400">Request pending…</span>
-              : <button onClick={() => dispatch({ type: 'REQUEST_TO_JOIN', chatId: chat.id, userId: 'user_me' })} className="px-3 py-1.5 bg-tg-accent text-white text-xs rounded-full hover:bg-tg-accent-hover transition-colors">Apply to Join</button>
+              : <button onClick={() => dispatch({ type: 'REQUEST_TO_JOIN', chatId: chat.id, userId: 'user_me' })} className="px-3.5 py-1.5 text-white text-xs font-medium rounded-full" style={{ background: 'linear-gradient(160deg, #57bcff, #3390ec 55%, #1f7fd6)', boxShadow: '0 4px 14px rgba(51,144,236,0.4)' }}>Apply to Join</button>
           )}
         </>
       )}

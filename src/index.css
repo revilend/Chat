@@ -12,10 +12,20 @@
   --color-tg-reply-bar: #1e2c3a;
 
   /* Bubbles */
-  --color-tg-outgoing: #2b5278;
-  --color-tg-incoming: #1e2c3d;
-  --color-tg-text-time-out: #a4c5e0;
+  --color-tg-outgoing: #2481cc;
+  --color-tg-incoming: #182533;
+  --color-tg-text-time-out: #cfe6fb;
   --color-tg-text-time-in: #7d8b99;
+
+  /* Telegram's own avatar gradients */
+  --avatar-1: linear-gradient(135deg, #ff885e, #ff516a);
+  --avatar-2: linear-gradient(135deg, #ffcd6a, #ffa85c);
+  --avatar-3: linear-gradient(135deg, #a695ff, #8f7bff);
+  --avatar-4: linear-gradient(135deg, #6fd8ff, #52b6ff);
+  --avatar-5: linear-gradient(135deg, #62c5a8, #3eb489);
+  --avatar-6: linear-gradient(135deg, #ff9ecb, #ff6fa5);
+  --avatar-7: linear-gradient(135deg, #9be36b, #5fc23a);
+  --avatar-8: linear-gradient(135deg, #ffb26b, #ff8a3d);
 
   /* Text */
   --color-tg-text: #f6f7f8;
@@ -128,21 +138,30 @@
     font-weight: 500;
     white-space: nowrap;
   }
+  /* The one glossy brand button used across the app. */
   .btn-primary {
-    background: var(--color-tg-accent);
     color: #fff;
-    box-shadow: 0 8px 20px color-mix(in srgb, var(--color-tg-accent) 32%, transparent);
+    background: linear-gradient(160deg, #57bcff 0%, #3390ec 52%, #1f7fd6 100%);
+    box-shadow: 0 8px 22px rgba(51, 144, 236, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   }
-  .btn-primary:hover { background: var(--color-tg-accent-hover); }
+  .btn-primary:hover { filter: brightness(1.07); }
   .btn-primary:disabled { opacity: 0.55; box-shadow: none; }
   .btn-ghost { background: var(--color-tg-input); color: var(--color-tg-text); }
   .btn-ghost:hover { background: var(--color-tg-hover); }
 
+  /* Every modal, menu and popover: a frosted pane over whatever is behind it. */
   .card {
-    background: var(--color-tg-elevated);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(30, 42, 55, 0.92);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 18px;
-    box-shadow: var(--shadow-menu);
+    box-shadow: var(--shadow-menu), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* The chat list picks up a faint brand glow at the top instead of flat slab grey. */
+  .sidebar-surface {
+    background-image: linear-gradient(180deg, rgba(51, 144, 236, 0.07) 0%, rgba(0, 0, 0, 0) 200px);
   }
 
   .field {
@@ -158,19 +177,83 @@
   .field::placeholder { color: var(--color-tg-text-secondary); }
   .field:focus { border-color: var(--color-tg-accent); }
 
-  /* Message bubbles. Everything stays inside the bubble: nothing may push the
-     layout wider than the screen, which is what protruding tails used to do. */
+  /* ── Message bubbles ────────────────────────────────────────────────────────
+     Everything stays inside the bubble: nothing may push the layout wider than
+     the screen, which is what protruding tails used to do. The "tail" is the
+     squared-off bottom corner on the last message of a run, exactly like the
+     real client does it. */
   .bubble {
-    border-radius: var(--radius-bubble);
+    border-radius: 18px;
     overflow: hidden;
     box-shadow: var(--shadow-raise);
     animation: bubble-in 0.18s ease-out;
   }
 
-  /* The last message of a run carries the "tail": its bottom corner is squared
-     off, exactly like the real client, without anything sticking out. */
+  .bubble-out {
+    background: linear-gradient(160deg, #2f93de 0%, #2481cc 46%, #1c6ca8 100%);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(9, 54, 92, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
+  .bubble-in {
+    background: linear-gradient(180deg, #1b2937 0%, #182533 100%);
+    color: var(--color-tg-text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
   .bubble-tail-out { border-bottom-right-radius: 6px; }
   .bubble-tail-in { border-bottom-left-radius: 6px; }
+
+  /* Consecutive messages from one person stack tightly, like a real chat. */
+  .bubble-run { margin-top: 2px; }
+
+  /* ── Translucent chrome ─────────────────────────────────────────────────────
+     The header and the composer float over the chat wallpaper. */
+  .glass-bar {
+    background: rgba(23, 33, 43, 0.82);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
+  }
+  .glass-header { border-bottom: 1px solid #101921; }
+  .glass-composer { border-top: 1px solid rgba(16, 25, 33, 0.85); }
+
+  /* ── The floating composer ──────────────────────────────────────────────────
+     A capsule that hovers above the bottom edge instead of being glued to it. */
+  .composer-pill {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 999px;
+    background: rgba(36, 47, 61, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  .composer-pill:focus-within {
+    border-color: color-mix(in srgb, var(--color-tg-accent) 55%, transparent);
+  }
+
+  .send-btn {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: linear-gradient(160deg, #57bcff 0%, #3390ec 52%, #1f7fd6 100%);
+    box-shadow: 0 6px 18px rgba(51, 144, 236, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  .send-btn:hover { filter: brightness(1.07); }
+  .send-btn:disabled { opacity: 0.45; box-shadow: none; }
+
+  /* Fades the wallpaper out behind the floating composer. */
+  .scrim-bottom {
+    background: linear-gradient(to top, rgba(14, 22, 33, 0.86), rgba(14, 22, 33, 0));
+  }
 
   /* A raised row, used for chat lists, contact lists and menu entries. */
   .row {
@@ -185,8 +268,25 @@
   }
   .row:hover { background: var(--color-tg-hover); }
 
-  .chat-doodle {
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23172533' fill-opacity='0.3'%3E%3Cpath d='M15 5l2 3-2 3M45 25l2 3-2 3M25 45l2 3-2 3M5 15l2 3-2 3M35 35l2 3-2 3M55 5l2 3-2 3M20 10l1.5 2-1.5 2M50 40l1.5 2-1.5 2M10 50l1.5 2-1.5 2M40 20l1.5 2-1.5 2M30 0l1 1.5-1 1.5M0 30l1 1.5-1 1.5M60 50l1 1.5-1 1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  /* Telegram's avatar circles carry a soft diagonal sheen. */
+  .avatar-sheen {
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.28);
+  }
+  .avatar-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 46%);
+    pointer-events: none;
+  }
+
+  /* The live-status dot, with the soft halo Telegram draws around it. */
+  .online-dot {
+    background: var(--color-tg-online);
+    box-shadow: 0 0 0 2px var(--color-tg-sidebar), 0 0 8px rgba(77, 205, 94, 0.55);
   }
 
   /* Spoiler */
@@ -206,9 +306,22 @@
 }
 
 /* `.tg-doodle` is kept outside the layers so a wallpaper can be layered on top
-   of it without the background-image being dropped. */
+   of it without the background-image being dropped. It sets only background-image
+   (and its size/repeat), so an inline `backgroundColor` from a per-chat wallpaper
+   still shows through the transparent parts of the pattern. */
 .tg-doodle {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23172533' fill-opacity='0.3'%3E%3Cpath d='M15 5l2 3-2 3M45 25l2 3-2 3M25 45l2 3-2 3M5 15l2 3-2 3M35 35l2 3-2 3M55 5l2 3-2 3M20 10l1.5 2-1.5 2M50 40l1.5 2-1.5 2M10 50l1.5 2-1.5 2M40 20l1.5 2-1.5 2M30 0l1 1.5-1 1.5M0 30l1 1.5-1 1.5M60 50l1 1.5-1 1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.06' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M28 22c2.6-3.4 6.8-2.6 7.8.8.9 3.1-2.6 5.6-7.8 10.2-5.2-4.6-8.7-7.1-7.8-10.2 1-3.4 5.2-4.2 7.8-.8z'/%3E%3Cpath d='M96 18l3.1 6.4 7 1-5 5 1.2 7-6.3-3.3-6.3 3.3 1.2-7-5-5 7-1z'/%3E%3Ccircle cx='124' cy='62' r='9'/%3E%3Cpath d='M62 60l18-8-5 21-4-8z'/%3E%3Cpath d='M30 96c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7z'/%3E%3Cpath d='M96 104v16M88 112h16'/%3E%3Cpath d='M12 130c5-5 11-5 16 0M74 134c5-5 11-5 16 0'/%3E%3Cpath d='M52 40l2 4 4 2-4 2-2 4-2-4-4-2 4-2z'/%3E%3Cpath d='M118 118c3-3 6-3 9 0'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(130% 100% at 50% 0%, #17242f 0%, #0e1621 62%);
+  background-size: 140px 140px, cover;
+  background-repeat: repeat, no-repeat;
+}
+
+/* Without backdrop-filter the glass would be unreadable — fall back to solid. */
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .glass-bar { background: #17212b; }
+  .composer-pill { background: #242f3d; }
+  .card { background: #1e2a37; }
 }
 
 @keyframes bubble-in {

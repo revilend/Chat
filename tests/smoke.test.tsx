@@ -201,6 +201,24 @@ for (const speed of ['1x', '1.5x', '2x']) expect(mediaChat, speed, `the voice pl
 // The outbox mark: a message written while the other person was away is visibly
 // still on its way instead of silently lost.
 expect(mediaChat, 'pending', 'a queued message is marked as pending in the outbox');
+
+// ═══ 3c. The redesign: glass chrome, gradient bubbles, floating composer ═══
+expect(peerChat, 'tg-doodle', 'the chat sits on the doodle wallpaper, not flat black');
+expect(peerChat, 'glass-header', 'the header is a translucent glass bar');
+expect(peerChat, 'glass-composer', 'the composer bar is translucent too');
+expect(peerChat, 'composer-pill', 'the composer is a floating capsule');
+expect(peerChat, 'send-btn', 'the composer has its glossy round action button');
+expect(peerChat, 'bubble-in', 'incoming messages use the dark incoming bubble');
+expect(peerChat, 'bubble-out', 'outgoing messages use the blue gradient bubble');
+expect(peerChat, 'bubble-tail-out', 'the last message of a run carries the tail corner');
+expect(peerChat, 'avatar-sheen', 'avatars carry the Telegram gradient sheen');
+
+// A per-chat wallpaper must not wipe out the doodle: the shorthand `background`
+// would reset background-image, `backgroundColor` does not.
+const wallpapered = render('chat with a custom wallpaper', surface(createElement(ChatArea), { ...peerState, chats: [{ ...peerState.chats![0], wallpaper: '#0f3460' }] }));
+if (/tg-doodle[^>]*background-color|background-color[^>]*tg-doodle/.test(wallpapered) || (wallpapered.includes('tg-doodle') && wallpapered.includes('background-color:#0f3460'))) {
+  console.log('✅ a custom wallpaper keeps the doodle pattern underneath it');
+} else { failures++; console.log('❌ the wallpaper clobbers the doodle background'); }
 if (peerChat.includes('tgweb-')) { failures++; console.log('❌ the old peer prefix is still in use'); }
 else console.log('✅ the old peer prefix is gone from the app');
 
