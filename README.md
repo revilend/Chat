@@ -39,14 +39,33 @@ browsers find each other. Message contents never pass through it.
 bun install
 bun run dev       # dev server
 bun run build     # type-check + production build into dist/
-bun run test_logic.ts    # account identity and sign-in checks
-bun run smoke_test.tsx   # renders the real UI surfaces and asserts on the markup
+bun run test      # account identity checks + UI smoke test
 ```
 
 ## Deploying to GitHub Pages
 
-The build outputs relative asset paths and a service worker, so `dist/` can be served from a
-project page (`username.github.io/repo/`) without extra configuration.
+The build emits relative asset paths (`base: './'`), a web manifest and a service worker, so `dist/`
+can be served from the root of a Pages domain and from a project path alike.
+
+`.github/workflows/deploy-pages.yml` does the whole job: every push to `main` installs, type-checks,
+builds and publishes `dist/` to Pages with the official Pages actions. Nothing is committed by hand
+and no build output lives in the repository.
+
+1. Push to `main` — or run the *Deploy to GitHub Pages* workflow manually from the Actions tab.
+2. Open **Settings → Pages** and make sure **Source** is **GitHub Actions**. The workflow tries to
+   enable this itself on its first run; if the run fails on *Configure Pages*, set it by hand and
+   re-run the workflow.
+
+Where the site ends up:
+
+| Repository | URL |
+| --- | --- |
+| `<user>.github.io` | `https://<user>.github.io/` — the **root** of the Pages domain |
+| anything else, e.g. `Chat` | `https://<user>.github.io/Chat/` — a project path |
+
+A repository's Pages site is always published under its own path, so serving this app at the
+**root** of the domain means the repository itself has to be the user site (`<user>.github.io`), or a
+custom domain has to be attached by adding a `public/CNAME` file with the domain in it.
 
 ## Security notes
 
