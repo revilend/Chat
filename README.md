@@ -1,18 +1,20 @@
 # Teleflow — real accounts, real people, no server
 
 Teleflow is a Telegram-style web client that runs entirely in the browser and deploys as a static
-site on GitHub Pages. This is **not a demo**: you create a real account, share your address, and
+site on GitHub Pages. This is **not a demo**: you create a real account, share your short ID, and
 messages travel directly between two devices over an encrypted WebRTC data channel.
 
 ## How it works
 
-1. **Create an account** — a username and a password are hashed locally into a 32-character
-   *address*. The password never leaves the device and is never uploaded; the same username and
-   password produce the same address on any device, so your account follows you around.
-2. **Share your address** — it is shown on the home screen, in Contacts and in the main menu.
-3. **Add a friend** — paste their address under *Contacts → Add by address*. The client tries to
+1. **Create an account** — a username and a password are hashed locally into a human **6-digit ID**
+   (for example `784 219`). The password never leaves the device and is never uploaded; the same
+   username and password produce the same ID on any device, so your account follows you around and
+   your history comes back with it.
+2. **Share your ID** — six digits, shown on the home screen, in Contacts and in the main menu.
+3. **Add a friend** — type their six digits under *Contacts → Add by ID*. The client tries to
    reach them right away: if they are online you are connected instantly, and if they are offline
-   the chat is kept and connects the moment they open the app.
+   the chat is kept and connects the moment they open the app. Anything written in the meantime
+   waits in the outbox (marked `pending`) and goes out by itself once they are reachable.
 4. **Write** — messages, edits, reactions, typing indicators and read receipts are sent straight to
    the other person's browser. Presence (`online` / `offline`) is real: it reflects a live
    connection, never a simulated status.
@@ -72,8 +74,8 @@ custom domain has to be attached by adding a `public/CNAME` file with the domain
 
 ## Security notes
 
-- The password is only ever used locally to derive the account address; it is not stored.
-- There is no password recovery: whoever knows the username and password can reproduce the address.
+- The password is only ever used locally to generate the 6-digit ID; it is not stored.
+- There is no password recovery: whoever knows the username and password can reproduce the ID.
 - Messages are peer-to-peer and are stored in the browser (IndexedDB) of each participant only.
 - The IndexedDB database and the local storage keys still use their original names so that chats
   saved before the rename are not discarded.

@@ -1,7 +1,7 @@
-import { deriveUserId, normalizeUsername } from '../utils/identity';
+import { deriveAccountId, isValidUserId, normalizeUserId, normalizeUsername } from '../utils/identity';
 
 export interface Session {
-  /** 32-hex public address — also the peer address other people add you by. */
+  /** Six-digit public ID — the address other people add you by. */
   userId: string;
   username: string;
   name: string;
@@ -23,7 +23,10 @@ export function loadSession(): Session | null {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Session;
-    return parsed?.userId ? parsed : null;
+    // A session from an older version points at an address nobody can reach any
+    // more (32 hex characters). Signing in again creates a real 6-digit ID.
+    if (!parsed?.userId || !isValidUserId(parsed.userId)) return null;
+    return { ...parsed, userId: normalizeUserId(parsed.userId) };
   } catch {
     return null;
   }
@@ -40,7 +43,8 @@ export function clearSession() {
 function readAccounts(): AccountRecord[] {
   try {
     const raw = localStorage.getItem(ACCOUNTS_KEY);
-    return raw ? (JSON.parse(raw) as AccountRecord[]) : [];
+    const parsed = raw ? (JSON.parse(raw) as AccountRecord[]) : [];
+    return parsed.filter(a => a?.username && isValidUserId(a.userId));
   } catch {
     return [];
   }
@@ -58,9 +62,9 @@ export function knownAccounts(): AccountRecord[] {
 /**
  * Turns a username + password into a real account.
  *
- * The account ID is derived from the credentials, so the *same* username and
- * password always produce the same address on every device — that address is
- * what other people add to reach you, and the only thing that can ever
+ * The account ID (six digits) is derived from the credentials, so the *same*
+ * username and password always produce the same ID on every device — that ID
+ * is what other people add to reach you, and the only thing that can ever
  * reproduce it is that exact password.
  */
 export async function authenticate(
@@ -75,7 +79,7 @@ export async function authenticate(
   if (!/^[a-z0-9_]+$/.test(handle)) throw new Error('Username can only use letters, numbers and _');
   if (password.length < 6) throw new Error('Password must be at least 6 characters.');
 
-  const userId = await deriveUserId(handle, password);
+  const userId = await deriveAccountId(handle, password);
   const accounts = readAccounts();
   const registered = accounts.find(a => a.username === handle);
 

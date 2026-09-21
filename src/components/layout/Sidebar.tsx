@@ -3,6 +3,7 @@ import { useApp } from '../../store/AppContext';
 import { Search, Menu, X, Users, Volume2, Archive, Pencil, Copy, Check, UserPlus } from 'lucide-react';
 import { ChatListItem } from './ChatListItem';
 import { HamburgerMenu } from './HamburgerMenu';
+import { formatUserId } from '../../utils/identity';
 import type { FolderType } from '../../types';
 
 const folders: { id: FolderType; icon: React.ReactNode; label: string }[] = [
@@ -20,7 +21,7 @@ export function Sidebar() {
   const [copied, setCopied] = useState(false);
 
   // A fresh account only has Saved Messages and the local bot. Phones hide the
-  // welcome pane, so the address is offered here until a real chat exists.
+  // welcome pane, so the ID is offered here until a real chat exists.
   const onlyPlaceholders = state.chats.every(c => c.type === 'saved' || c.id === 'chat_bot');
 
   const copyAddress = async () => {
@@ -137,17 +138,19 @@ export function Sidebar() {
         {onlyPlaceholders && !state.searchQuery && (
           <div className="md:hidden mx-1.5 mb-2 rounded-2xl bg-gradient-to-br from-tg-accent/25 to-tg-accent/5 border border-tg-accent/25 p-3.5">
             <div className="text-[13px] font-semibold text-tg-text">Start a real conversation</div>
-            <div className="mt-2 rounded-xl bg-black/25 px-2.5 py-2 font-mono text-[11px] text-tg-text break-all leading-relaxed">{state.session?.userId}</div>
+            <div className="mt-2 rounded-xl bg-black/25 py-2 text-center font-mono text-2xl tracking-[0.18em] text-tg-text">
+              {formatUserId(state.session?.userId ?? '')}
+            </div>
             <div className="mt-2.5 flex gap-2">
               <button onClick={copyAddress} className="btn btn-primary flex-1 h-10 rounded-xl text-xs">
-                {copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copied' : 'Copy address'}
+                {copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copied' : 'Copy my ID'}
               </button>
               <button onClick={() => dispatch({ type: 'TOGGLE_CONTACTS' })} className="btn btn-ghost flex-1 h-10 rounded-xl text-xs">
                 <UserPlus size={15} />Add contact
               </button>
             </div>
             <p className="mt-2.5 text-[10px] text-tg-text-secondary leading-relaxed">
-              Send your address to a friend — your messages travel straight between your two devices.
+              Send your six-digit ID to a friend — your messages travel straight between your two devices.
             </p>
           </div>
         )}

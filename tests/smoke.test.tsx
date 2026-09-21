@@ -68,8 +68,11 @@ import { ChatArea } from '../src/components/chat/ChatArea';
 import { HamburgerMenu } from '../src/components/layout/HamburgerMenu';
 import { WelcomeScreen } from '../src/components/shared/WelcomeScreen';
 
-const ME = 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6';
-const PEER = '11223344556677889900aabbccddeeff';
+const ME = '784219';
+const PEER = '310554';
+/** How the app shows an ID: six digits, split for reading. */
+const ME_SHOWN = '784 219';
+const PEER_SHOWN = '310 554';
 
 let failures = 0;
 const strip = (html: string) => html.replace(/<!--[\s\S]*?-->/g, '');
@@ -101,7 +104,8 @@ else console.log('✅ no leftovers of the old product name');
 expect(signedOut, 'Create account', 'create-account tab is offered');
 expect(signedOut, 'Sign in', 'sign-in tab is offered');
 expect(signedOut, 'device to device', 'the screen explains how messages travel');
-expect(signedOut, 'Your address', 'the address concept is explained before signup');
+expect(signedOut, 'Your ID', 'the ID concept is explained before signup');
+expect(signedOut, '6-digit ID', 'the sign-in screen promises a short ID');
 expect(signedOut, 'Username', 'the username field is present');
 expect(signedOut, 'Password', 'the password field is present');
 
@@ -126,14 +130,14 @@ if (signedIn.includes('Alice Chen') || signedIn.includes('Dev Team')) {
 } else console.log('✅ no fake people or demo groups in the app');
 
 const welcome = render('home screen', surface(createElement(WelcomeScreen)));
-expect(welcome, 'Copy my address', 'home screen offers the real address to share');
-expect(welcome, ME, 'the actual account address is displayed');
+expect(welcome, 'Copy my ID', 'home screen offers the real ID to share');
+expect(welcome, ME_SHOWN, 'the actual account ID is displayed');
 expect(welcome, 'Add a contact', 'home screen points at adding a real person');
 
 const menu = render('main menu', surface(createElement(HamburgerMenu, { onClose: () => {} }), { session, currentUser: { id: ME, name: 'Aziza Karimova', username: 'aziza', avatar: '', bio: '', phone: '', lastSeen: Date.now(), isOnline: true, canSeeUserId: 'everyone', canSeeLastSeen: 'everyone' } }));
-expect(menu, 'My address', 'menu exposes the account address');
+expect(menu, 'My ID', 'menu exposes the account ID');
 expect(menu, 'Sign out', 'menu can sign out of the real account');
-expect(menu, ME, 'menu shows the real address');
+expect(menu, ME_SHOWN, 'menu shows the real ID');
 
 // ═══ 3. A real peer chat, overrides only (no store mutation) ═══
 const peerState: Partial<AppState> = {
@@ -162,12 +166,40 @@ else console.log('✅ peer chat markup has no undefined values');
 if (peerChat.includes('NaN')) { failures++; console.log('❌ peer chat markup contains "NaN"'); }
 else console.log('✅ peer chat markup has no NaN values');
 
+// ═══ 3b. The media players are real players ═══
+const mediaState: Partial<AppState> = {
+  ...peerState,
+  messages: [
+    ...(peerState.messages ?? []),
+    { id: 'p3', chatId: `chat_peer_${PEER}`, senderId: PEER, text: '', timestamp: Date.now() - 20000, type: 'voice', readBy: [PEER], audioUrl: 'data:audio/wav;base64,AAAA', audioDuration: 9, audioWaveform: [0.2, 0.7, 0.4] },
+    { id: 'p4', chatId: `chat_peer_${PEER}`, senderId: 'user_me', text: '', timestamp: Date.now() - 10000, type: 'video', videoNote: true, videoUrl: 'data:video/mp4;base64,BBBB', readBy: ['user_me'] },
+    { id: 'p5', chatId: `chat_peer_${PEER}`, senderId: 'user_me', text: 'written while you were away', timestamp: Date.now() - 5000, type: 'text', readBy: ['user_me'], deliveryPending: true },
+  ],
+};
+const mediaChat = render('peer chat with voice, video note and outbox', surface(createElement(ChatArea), mediaState));
+
+// The circular video message is a real <video> that loops and can be tapped,
+// not an empty circle.
+if (/<video[^>]*loop/.test(mediaChat) && /<video[^>]*playsinline/i.test(mediaChat)) {
+  console.log('✅ the circular video message is a real looping video element');
+} else { failures++; console.log('❌ the circular video message is not a playable <video>'); }
+if (/<audio[^>]*data:audio\/wav/.test(mediaChat)) console.log('✅ the voice message carries real audio');
+else { failures++; console.log('❌ the voice message has no audio element'); }
+for (const speed of ['1x', '1.5x', '2x']) expect(mediaChat, speed, `the voice player offers ${speed} playback`);
+
+// The outbox mark: a message written while the other person was away is visibly
+// still on its way instead of silently lost.
+expect(mediaChat, 'pending', 'a queued message is marked as pending in the outbox');
+if (peerChat.includes('tgweb-')) { failures++; console.log('❌ the old peer prefix is still in use'); }
+else console.log('✅ the old peer prefix is gone from the app');
+
 const peerList = render('sidebar with a real contact', surface(createElement(Sidebar), peerState));
 expect(peerList, 'Bekzod', 'the real contact shows in the chat list');
 
 const contacts = render('contacts with address book', surface(createElement(ContactsModal), { ...peerState, isContactsOpen: true }));
-expect(contacts, 'My address', 'contacts screen shows my own address');
-expect(contacts, 'Add by address', 'contacts screen can connect a new person');
+expect(contacts, 'My ID', 'contacts screen shows my own ID');
+expect(contacts, ME_SHOWN, 'contacts screen shows the actual six digits');
+expect(contacts, 'Add by ID', 'contacts screen can connect a new person');
 expect(contacts, 'Bekzod', 'existing contact is listed');
 
 // ═══ 4. Empty workspace must not crash ═══
@@ -222,7 +254,7 @@ const ringing = render('incoming call', surface(createElement(AppInner), {
   incomingCall: {
     userId: PEER,
     video: true,
-    connection: { peer: `tgweb-${PEER}`, metadata: { video: true }, open: true, on() {}, answer() {}, close() {} } as never,
+    connection: { peer: `teleflow-${PEER}`, metadata: { video: true }, open: true, on() {}, answer() {}, close() {} } as never,
   },
 }));
 expect(ringing, 'Bekzod', 'the caller is named on the incoming call screen');
@@ -253,7 +285,7 @@ desktopViewport = false;
 const phoneHome = render('phone → chat list fills the screen', surface(createElement(AppInner), { ...peerState, activeChatId: null, chats: [] }));
 checkPane('phone shows the chat list when no chat is open', phoneHome, 'list-pane', true);
 checkPane('phone hides the welcome pane (no squeezed panel)', phoneHome, 'chat-pane', false);
-expect(phoneHome, 'Copy my address', 'the phone home still offers the address to share');
+expect(phoneHome, 'Copy my ID', 'the phone home still offers the ID to share');
 expect(phoneHome, 'Add contact', 'the phone home offers adding a person');
 
 // Open chat on a phone: the chat replaces the list.

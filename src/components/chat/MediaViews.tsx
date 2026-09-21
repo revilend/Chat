@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../store/AppContext';
-import { Play, Pause, Download, FileText, X, Music, ExternalLink, RotateCcw } from 'lucide-react';
+import { Play, Pause, Download, FileText, X, Music, ExternalLink } from 'lucide-react';
 import { formatBytes } from '../../utils/media';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -42,37 +42,71 @@ export function VideoView({ url }: { url: string }) {
   );
 }
 
-export function VideoNoteView({ url }: { url: string }) {
+export function VideoNoteView({ url }: { url?: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [hasFrame, setHasFrame] = useState(false);
 
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
     const onTime = () => setProgress(video.duration ? video.currentTime / video.duration : 0);
-    const onEnd = () => { setPlaying(false); setProgress(0); };
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
     video.addEventListener('timeupdate', onTime);
-    video.addEventListener('ended', onEnd);
-    return () => { video.removeEventListener('timeupdate', onTime); video.removeEventListener('ended', onEnd); };
-  }, []);
+    video.addEventListener('play', onPlay);
+    video.addEventListener('pause', onPause);
+    return () => {
+      video.removeEventListener('timeupdate', onTime);
+      video.removeEventListener('play', onPlay);
+      video.removeEventListener('pause', onPause);
+    };
+  }, [url]);
 
   const toggle = () => {
     const video = ref.current;
     if (!video) return;
-    if (video.paused) { video.play().catch(() => {}); setPlaying(true); }
-    else { video.pause(); setPlaying(false); }
+    if (video.paused) void video.play().catch(() => setPlaying(false));
+    else video.pause();
   };
 
-  const size = 200;
+  // Logical size for the progress ring; CSS keeps the circle inside a phone screen.
+  const size = 190;
   const stroke = 3;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
 
+  if (!url) {
+    return (
+      <div className="w-[min(190px,62vw)] h-[min(190px,62vw)] rounded-full bg-black/40 flex items-center justify-center text-center px-6 text-[11px] text-tg-text-secondary">
+        Video message not stored on this device
+      </div>
+    );
+  }
+
   return (
-    <button onClick={(e) => { e.stopPropagation(); toggle(); }} className="relative mb-1 block" style={{ width: size, height: size }}>
-      <video ref={ref} src={url} playsInline className="w-full h-full rounded-full object-cover" />
-      <svg className="absolute inset-0 -rotate-90" width={size} height={size}>
+    <button
+      onClick={(e) => { e.stopPropagation(); toggle(); }}
+      className="relative mb-1 block rounded-full overflow-hidden bg-black shrink-0"
+      style={{ width: 'min(190px, 62vw)', height: 'min(190px, 62vw)' }}
+      title={playing ? 'Pause video message' : 'Play video message'}
+    >
+      <video
+        ref={ref}
+        src={url}
+        playsInline
+        loop
+        preload="metadata"
+        className="w-full h-full object-cover rounded-full"
+        // Draw the recorded first frame immediately, so the circle is never empty.
+        onLoadedData={(e) => {
+          const video = e.currentTarget;
+          setHasFrame(true);
+          try { if (video.currentTime === 0) video.currentTime = 0.05; } catch { /* seek not ready yet */ }
+        }}
+      />
+      <svg className="absolute inset-0 -rotate-90 pointer-events-none" viewBox={`0 0 ${size} ${size}`} width="100%" height="100%">
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={stroke} />
         <circle
           cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#2481cc" strokeWidth={stroke}
@@ -80,9 +114,14 @@ export function VideoNoteView({ url }: { url: string }) {
         />
       </svg>
       {!playing && (
-        <span className="absolute inset-0 flex items-center justify-center">
-          <span className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center"><Play size={22} className="text-white ml-0.5" /></span>
+        <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+          <span className="w-12 h-12 rounded-full bg-black/55 flex items-center justify-center">
+            <Play size={22} className="text-white ml-0.5" />
+          </span>
         </span>
+      )}
+      {!hasFrame && !playing && (
+        <span className="absolute inset-x-0 bottom-3 text-center text-[10px] text-white/70">tap to play</span>
       )}
     </button>
   );
@@ -117,34 +156,73 @@ export function FileView({ url, name, size, isMe }: { url?: string; name: string
 /* ═══════════════════════════════════════════════════════════════
    Voice message — real audio element + real speed switching
    ═══════════════════════════════════════════════════════════════ */
+function clockTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '0:00';
+  const total = Math.floor(seconds);
+  return `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, '0')}`;
+}
+
 export function VoiceView({ messageId }: { messageId: string }) {
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
   const message = state.messages.find(m => m.id === messageId);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [played, setPlayed] = useState(0);
+  const [measured, setMeasured] = useState(0);
   const [speed, setSpeed] = useState(1);
+  const [failed, setFailed] = useState(false);
 
   const isMe = message?.senderId === 'user_me';
-  const hasAudio = !!message?.audioUrl;
+  const url = message?.audioUrl;
+  const hasAudio = !!url;
   const waveform = message?.audioWaveform && message.audioWaveform.length ? message.audioWaveform : Array.from({ length: 32 }, (_, i) => 0.3 + Math.abs(Math.sin(i / 2)) * 0.6);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onTime = () => setProgress(audio.duration ? audio.currentTime / audio.duration : 0);
-    const onEnd = () => { setPlaying(false); setProgress(0); };
+    const onTime = () => {
+      setPlayed(audio.currentTime);
+      setProgress(audio.duration ? audio.currentTime / audio.duration : 0);
+    };
+    const onMeta = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) setMeasured(audio.duration);
+    };
+    const onPlay = () => { setPlaying(true); setFailed(false); };
+    const onPause = () => setPlaying(false);
+    const onEnd = () => { setPlaying(false); setProgress(0); setPlayed(0); };
     audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('loadedmetadata', onMeta);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
     audio.addEventListener('ended', onEnd);
-    return () => { audio.removeEventListener('timeupdate', onTime); audio.removeEventListener('ended', onEnd); };
-  }, [message?.audioUrl]);
+    if (audio.readyState >= 1) onMeta();
+    return () => {
+      audio.removeEventListener('timeupdate', onTime);
+      audio.removeEventListener('loadedmetadata', onMeta);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('ended', onEnd);
+    };
+  }, [url]);
+
+  // The chosen speed is applied whenever the clip (re)loads, so it survives
+  // seeking, pausing and switching chats.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) audio.playbackRate = speed;
+  }, [speed, url]);
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     const audio = audioRef.current;
-    if (!hasAudio || !audio) { setPlaying(p => !p); return; }
-    if (audio.paused) { audio.play().catch(() => {}); setPlaying(true); }
-    else { audio.pause(); setPlaying(false); }
+    if (!hasAudio || !audio) return;
+    if (audio.paused) {
+      audio.playbackRate = speed;
+      void audio.play().catch(() => setFailed(true));
+    } else {
+      audio.pause();
+    }
   };
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -155,18 +233,25 @@ export function VoiceView({ messageId }: { messageId: string }) {
     audio.currentTime = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * audio.duration;
   };
 
-  const changeSpeed = (s: number) => {
-    setSpeed(s);
-    if (audioRef.current) audioRef.current.playbackRate = s;
+  // 1x / 1.5x / 2x really change the playback rate, and it keeps playing while it changes.
+  const changeSpeed = (value: number) => {
+    setSpeed(value);
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.playbackRate = value;
+    if (audio.paused) return;
+    void audio.play().catch(() => setFailed(true));
   };
 
-  const duration = message?.audioDuration || 0;
-  const shown = hasAudio && playing ? `${Math.floor(progress * duration)}s / ${duration}s` : `${duration}s`;
+  const duration = message?.audioDuration || measured || 0;
+  const shown = playing || played > 0
+    ? `${clockTime(played)} / ${clockTime(duration)}`
+    : clockTime(duration);
 
   return (
-    <div className="flex items-center gap-2 py-1 min-w-[210px]">
-      {message?.audioUrl && <audio ref={audioRef} src={message.audioUrl} preload="metadata" />}
-      <button onClick={toggle} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isMe ? 'bg-white/20' : 'bg-tg-accent'}`}>
+    <div className="flex items-center gap-2 py-1 min-w-[210px] max-w-full">
+      {url && <audio ref={audioRef} src={url} preload="metadata" />}
+      <button onClick={toggle} disabled={!hasAudio} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-50 ${isMe ? 'bg-white/20' : 'bg-tg-accent'}`} title={playing ? 'Pause' : 'Play voice message'}>
         {playing ? <Pause size={16} className="text-white" /> : <Play size={16} className="text-white ml-0.5" />}
       </button>
       <div className="flex-1 min-w-0">
@@ -180,28 +265,24 @@ export function VoiceView({ messageId }: { messageId: string }) {
           ))}
         </div>
         <div className={`text-[10px] mt-0.5 flex items-center gap-1 ${isMe ? 'text-white/60' : 'text-tg-text-secondary'}`}>
-          {shown}
+          <span className="tabular-nums">{shown}</span>
           {message?.voiceEffect && message.voiceEffect !== 'normal' && <span>• {message.voiceEffect}</span>}
           {!hasAudio && <span>• audio not stored</span>}
+          {failed && <span className="text-tg-red">• cannot play here</span>}
         </div>
       </div>
-      <div className="flex gap-0.5">
-        {[1, 1.5, 2].map(s => (
+      <div className="flex gap-0.5 flex-shrink-0">
+        {[1, 1.5, 2].map(value => (
           <button
-            key={s}
-            onClick={(e) => { e.stopPropagation(); changeSpeed(s); }}
-            className={`text-[10px] px-1.5 py-0.5 rounded ${speed === s ? 'bg-tg-accent text-white' : (isMe ? 'bg-white/10 text-white/60' : 'bg-black/10 text-tg-text-secondary')}`}
+            key={value}
+            onClick={(e) => { e.stopPropagation(); changeSpeed(value); }}
+            className={`text-[10px] px-1.5 py-0.5 rounded tabular-nums ${speed === value ? 'bg-tg-accent text-white' : (isMe ? 'bg-white/10 text-white/60' : 'bg-black/10 text-tg-text-secondary')}`}
+            title={`Play at ${value}x`}
           >
-            {s}x
+            {value}x
           </button>
         ))}
       </div>
-      <button
-        onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_MINI_APP', app: null }); }}
-        className="hidden"
-        aria-hidden
-      />
-      <RotateCcw size={0} className="hidden" />
     </div>
   );
 }
@@ -248,28 +329,22 @@ export function MusicPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [speed, setSpeed] = useState(1);
   const playing = state.nowPlaying?.playing ?? false;
   const url = state.nowPlaying?.url;
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.playbackRate = 1;
-    if (playing) audio.play().catch(() => {});
+    audio.playbackRate = speed;
+    if (playing) void audio.play().catch(() => {});
     else audio.pause();
-  }, [playing, url]);
+  }, [playing, url, speed]);
 
   if (!state.nowPlaying) return null;
 
   const chat = getChat(state.nowPlaying.chatId);
-  const cycleSpeed = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const next = audio.playbackRate >= 2 ? 1 : audio.playbackRate === 1 ? 1.5 : 2;
-    audio.playbackRate = next;
-    setProgress(p => p);
-    audio.dataset.speed = String(next);
-  };
+  const cycleSpeed = () => setSpeed(current => (current >= 2 ? 1 : current === 1 ? 1.5 : 2));
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-tg-header border-b border-black/20 flex-shrink-0">
@@ -297,8 +372,8 @@ export function MusicPlayer() {
         </div>
       </div>
       <span className="text-[10px] text-tg-text-secondary">{Math.floor(progress * duration)}s</span>
-      <button onClick={cycleSpeed} className="text-[10px] px-1.5 py-0.5 rounded bg-tg-input text-tg-text-secondary">
-        {audioRef.current?.playbackRate ?? 1}x
+      <button onClick={cycleSpeed} className="text-[10px] px-1.5 py-0.5 rounded bg-tg-input text-tg-text-secondary tabular-nums" title="Playback speed">
+        {speed}x
       </button>
       <button onClick={() => dispatch({ type: 'SET_NOW_PLAYING', nowPlaying: null })} className="p-1"><X size={14} className="text-tg-text-secondary" /></button>
     </div>

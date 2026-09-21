@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Lock, Radio, Shield, UserPlus } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, IdCard, KeyRound, Loader2, Lock, Radio, Shield, UserPlus } from 'lucide-react';
 import { authenticate, knownAccounts, type Session } from '../../auth/session';
 import { useAccount } from '../../auth/AccountContext';
-import { shortId } from '../../utils/identity';
+import { formatUserId, shortId } from '../../utils/identity';
 
 type Mode = 'signin' | 'signup';
 
@@ -47,7 +47,7 @@ export function AuthScreen() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setError('Could not copy — select the address and copy it manually.');
+      setError('Could not copy — select the ID and copy it manually.');
     }
   };
 
@@ -79,13 +79,16 @@ export function AuthScreen() {
             <span className="bg-gradient-to-r from-[#52b6ff] to-[#8f7bff] bg-clip-text text-transparent">device to device.</span>
           </h1>
           <p className="mt-4 text-sm text-tg-text-secondary max-w-md leading-relaxed">
-            Create an account and you get a personal address. Give it to a friend, they add it, and your
+            Create an account and you get a short 6-digit ID. Give it to a friend, they add it, and your
             messages travel directly between your two browsers — no mailbox in the middle.
           </p>
 
           <div className="mt-10 space-y-4 max-w-md">
-            <Bullet icon={<KeyRound size={16} />} title="One address, any device">
-              Your address is derived from your username and password, so the same login works on your phone,
+            <Bullet icon={<IdCard size={16} />} title="Your ID is just six digits">
+              No long code to copy. Read it out loud, type it by hand — for example 784 219.
+            </Bullet>
+            <Bullet icon={<KeyRound size={16} />} title="One ID, any device">
+              Your ID is derived from your username and password, so the same login works on your phone,
               your laptop and your friend's browser.
             </Bullet>
             <Bullet icon={<Radio size={16} />} title="Direct connection">
@@ -115,13 +118,15 @@ export function AuthScreen() {
                   </div>
                   <h2 className="mt-4 text-lg font-medium text-tg-text">Your account is ready</h2>
                   <p className="mt-1 text-sm text-tg-text-secondary">
-                    This is your personal address. Share it with the person you want to write to — they add it
-                    under Contacts to reach you.
+                    This is your ID. Share it with the person you want to write to — they add it under Contacts
+                    to reach you.
                   </p>
 
-                  <div className="mt-4 rounded-xl bg-tg-input p-3">
-                    <div className="text-[11px] uppercase tracking-wide text-tg-text-secondary">Your address</div>
-                    <div className="mt-1 font-mono text-[13px] text-tg-text break-all">{created.userId}</div>
+                  <div className="mt-4 rounded-xl bg-tg-input p-4 text-center">
+                    <div className="text-[11px] uppercase tracking-wide text-tg-text-secondary">Your ID</div>
+                    <div className="mt-1 font-mono text-[34px] leading-tight tracking-[0.18em] text-tg-text">
+                      {formatUserId(created.userId)}
+                    </div>
                   </div>
 
                   <button
@@ -129,11 +134,11 @@ export function AuthScreen() {
                     className="btn btn-primary mt-3 w-full h-12 rounded-xl"
                   >
                     {copied ? <Check size={16} /> : <Copy size={16} />}
-                    {copied ? 'Copied' : 'Copy my address'}
+                    {copied ? 'Copied' : 'Copy my ID'}
                   </button>
 
                   <div className="mt-4 text-xs text-tg-text-secondary">
-                    You are <span className="text-tg-text">@{created.username}</span> · short form{' '}
+                    You are <span className="text-tg-text">@{created.username}</span> · ID{' '}
                     <span className="font-mono">{shortId(created.userId)}</span>
                   </div>
 
@@ -170,8 +175,8 @@ export function AuthScreen() {
                   </h2>
                   <p className="mt-1 text-sm text-tg-text-secondary">
                     {mode === 'signup'
-                      ? 'Pick a name and a password. The password is the key to your address — it is never stored anywhere.'
-                      : 'Enter the same username and password you used before to get your address back.'}
+                      ? 'Pick a name and a password. They generate your 6-digit ID and are never stored anywhere.'
+                      : 'Enter the same username and password you used before to get your ID and your chats back.'}
                   </p>
 
                   <div className="mt-5 space-y-3">
@@ -220,7 +225,7 @@ export function AuthScreen() {
                     className="btn btn-primary mt-5 w-full h-12 rounded-xl"
                   >
                     {busy && <Loader2 size={16} className="animate-spin" />}
-                    {busy ? 'Deriving your address…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+                    {busy ? 'Creating your ID…' : mode === 'signup' ? 'Create account' : 'Sign in'}
                   </button>
 
                   {accounts.length > 0 && (
@@ -241,7 +246,7 @@ export function AuthScreen() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="text-sm text-tg-text truncate">@{acc.username}</div>
-                              <div className="text-[11px] text-tg-text-secondary font-mono truncate">{shortId(acc.userId)}</div>
+                              <div className="text-[11px] text-tg-text-secondary font-mono truncate">ID {shortId(acc.userId)}</div>
                             </div>
                           </button>
                         ))}
@@ -252,8 +257,8 @@ export function AuthScreen() {
                   <div className="mt-5 flex items-start gap-2 text-[11px] text-tg-text-secondary leading-relaxed">
                     <Lock size={13} className="mt-0.5 flex-shrink-0" />
                     <span>
-                      Your password never leaves this device and is never uploaded. It is only used to derive
-                      your address locally, so keep it safe — it cannot be recovered.
+                      Your password never leaves this device and is never uploaded. It only generates your ID
+                      locally, so keep it safe — the same username and password always bring your ID back.
                     </span>
                   </div>
                 </motion.form>

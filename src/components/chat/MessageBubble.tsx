@@ -171,7 +171,11 @@ export function MessageBubble({ message, isGrouped, isLast, isSelected }: Props)
             {message.editedAt && <span className={`text-[10px] ${isMe ? 'text-white/50' : 'text-tg-text-secondary'}`}>edited</span>}
             {message.scheduledAt && <span className="text-[10px] text-amber-400" title="Scheduled message">🕐 {formatTime(message.scheduledAt)}</span>}
             {message.sendWhenOnline && <span className="text-[10px]" title="Queued until the recipient is online">⏳</span>}
-            {isMe && message.deliveryPending && !message.sendWhenOnline && <span className="text-[10px] opacity-80" title="Not delivered yet — will send when they are reachable">🕓</span>}
+            {isMe && message.deliveryPending && !message.sendWhenOnline && (
+              <span className="text-[10px] opacity-80 flex items-center gap-0.5" title="Waiting in the outbox — it goes out as soon as they are reachable">
+                🕓 pending
+              </span>
+            )}
             {message.sentWithoutSound && <span className="text-[10px]" title="Sent without sound">🔇</span>}
             <span className={`text-[11px] tabular-nums ${isMe ? 'text-tg-text-time-out' : 'text-tg-text-time-in'}`}>{formatTime(message.timestamp)}</span>
             {isMe && (message.readBy.length > 1 ? <CheckCheck size={14} className="text-tg-accent" /> : <Check size={14} className="text-white/50" />)}

@@ -190,9 +190,11 @@ export class VideoNoteCapture {
 
   async start(): Promise<MediaStream> {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera is not available in this browser');
-    this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 480, height: 480 }, audio: true });
+    this.stream = await this.openCamera();
     this.chunks = [];
-    const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', ''].find(t => !t || MediaRecorder.isTypeSupported(t));
+    // MP4/H.264 first when the browser can record it (Safari, and Chrome where
+    // supported): those files play back on every phone, unlike WebM.
+    const mime = ['video/mp4;codecs=h264,aac', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', ''].find(t => !t || MediaRecorder.isTypeSupported(t));
     this.recorder = new MediaRecorder(this.stream, mime ? { mimeType: mime } : undefined);
     this.recorder.ondataavailable = (e) => { if (e.data.size > 0) this.chunks.push(e.data); };
     this.recorder.start();
@@ -216,6 +218,27 @@ export class VideoNoteCapture {
   cancel() {
     try { this.recorder?.stop(); } catch { /* already stopped */ }
     this.cleanup();
+  }
+
+  /**
+   * Front square camera when the device allows it, then progressively simpler
+   * constraints: some phones reject a fixed size or a required facing mode.
+   */
+  private async openCamera(): Promise<MediaStream> {
+    const attempts: MediaStreamConstraints[] = [
+      { video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 480 } }, audio: true },
+      { video: { facingMode: 'user' }, audio: true },
+      { video: true, audio: true },
+    ];
+    let lastError: unknown = null;
+    for (const constraints of attempts) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error('Camera access denied');
   }
 
   private cleanup() {

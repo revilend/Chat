@@ -5,7 +5,7 @@ import { X, Search, UserPlus, MessageSquare, Copy, Check, Loader2 } from 'lucide
 import { motion } from 'framer-motion';
 import { getInitials, getAvatarColor } from '../layout/ChatListItem';
 import { ContactNoteEditor } from '../features/AdvancedFeatures';
-import { isValidUserId } from '../../utils/identity';
+import { formatUserId, isValidUserId, normalizeUserId } from '../../utils/identity';
 
 export function ContactsModal() {
   const { state, dispatch, getUser, t } = useApp();
@@ -44,12 +44,12 @@ export function ContactsModal() {
   };
 
   const connect = async () => {
-    const value = address.trim().toLowerCase();
+    const value = normalizeUserId(address);
     if (!isValidUserId(value)) {
-      setStatus({ kind: 'error', text: 'That is not a valid address. Ask your friend to copy theirs from their Contacts screen.' });
+      setStatus({ kind: 'error', text: 'That is not a valid ID. Ask your friend for their 6-digit Teleflow ID.' });
       return;
     }
-    setStatus({ kind: 'busy', text: 'Connecting to that address…' });
+    setStatus({ kind: 'busy', text: 'Connecting to that ID…' });
     try {
       const online = await addPeer(value);
       setAddress('');
@@ -93,12 +93,14 @@ export function ContactsModal() {
           <h2 className="text-base font-medium text-tg-text">{t('contacts')}</h2>
         </div>
 
-        {/* Your own address */}
+        {/* Your own ID — six digits, meant to be read out loud */}
         <div className="px-4 py-3 border-b border-black/20 bg-tg-input/30">
-          <div className="text-[11px] uppercase tracking-wide text-tg-text-secondary">My address</div>
+          <div className="text-[11px] uppercase tracking-wide text-tg-text-secondary">My ID</div>
           <div className="mt-1 flex items-center gap-2">
-            <div className="flex-1 font-mono text-[11px] text-tg-text break-all">{myAddress}</div>
-            <button onClick={copyAddress} className="p-2 rounded-lg hover:bg-tg-hover" title="Copy address">
+            <div className="flex-1 font-mono text-[26px] leading-none tracking-[0.16em] text-tg-text">
+              {formatUserId(myAddress)}
+            </div>
+            <button onClick={copyAddress} className="p-2 rounded-lg hover:bg-tg-hover" title="Copy my ID">
               {copied ? <Check size={16} className="text-tg-green" /> : <Copy size={16} className="text-tg-text-secondary" />}
             </button>
           </div>
@@ -152,20 +154,22 @@ export function ContactsModal() {
 
           {contacts.length === 0 && (
             <div className="px-4 py-6 text-center text-sm text-tg-text-secondary">
-              No contacts yet. Share your address, or add a friend's address below.
+              No contacts yet. Share your 6-digit ID, or add a friend's ID below.
             </div>
           )}
 
-          {/* Connect to a real person by their address */}
+          {/* Connect to a real person by their six-digit ID */}
           <div className="border-t border-black/20 mt-2 pt-3 px-3 pb-4">
-            <div className="text-xs text-tg-text-secondary mb-2 px-1">Add by address</div>
+            <div className="text-xs text-tg-text-secondary mb-2 px-1">Add by ID</div>
             <div className="flex items-center gap-2">
               <input
                 value={address}
+                inputMode="numeric"
+                maxLength={12}
                 onChange={e => { setAddress(e.target.value); setStatus({ kind: 'idle', text: '' }); }}
                 onKeyDown={e => { if (e.key === 'Enter') void connect(); }}
-                placeholder="Paste your friend's address"
-                className="flex-1 bg-tg-input rounded-lg px-3 py-2 text-xs font-mono text-tg-text outline-none placeholder:font-sans placeholder:text-tg-text-secondary"
+                placeholder="Your friend's 6-digit ID"
+                className="flex-1 bg-tg-input rounded-lg px-3 py-2 text-sm font-mono tracking-widest text-tg-text outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-tg-text-secondary"
               />
               <button
                 onClick={() => void connect()}

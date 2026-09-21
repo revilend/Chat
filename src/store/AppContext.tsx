@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import type { User, Chat, Message, Story, Account, Contact, Language, ThemeMode, FolderType, Poll, Reminder, StickerPack, DNDSchedule, Wallet, GroupPermissions, PendingMedia, NowPlaying } from '../types';
 import { translations } from '../i18n';
-import { saveData, getData, clearStore } from '../db';
+import { persistWorkspace, loadStoredWorkspace, clearStoredWorkspace, type StoredWorkspace } from '../utils/storage';
 import { playIncomingMessage, playOutgoingMessage } from '../utils/audio';
 import { parseInviteHash } from '../utils/invite';
 import { network, type CloudStatus, type OutgoingEnvelope } from '../net/network';
@@ -532,21 +532,66 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
   // Every account owns its own workspace, so two people never share a mailbox.
   const workspaceKey = sessionUserId ? `workspace:${sessionUserId}` : null;
 
-  // Persist the workspace to IndexedDB (survives reload / app restart).
-  // Skipped until the account's own workspace has been read back: booting the app
-  // with an empty workspace must never overwrite what is stored on disk.
+  // The newest snapshot, kept in a ref so the page-hide flush below can write it
+  // without waiting for a re-render.
+  const liveWorkspaceRef = useRef<{ userId: string; workspace: StoredWorkspace } | null>(null);
+
+  // Persist the workspace to IndexedDB *and* localStorage (survives reload,
+  // closing the app, and reopening it days later). Skipped until the account's
+  // own workspace has been read back: booting the app with an empty workspace
+  // must never overwrite what is stored on disk.
   useEffect(() => {
-    if (!workspaceKey || state.hydratedFor !== sessionUserId) return;
-    const timer = setTimeout(() => {
-      const workspace = {
-        chats: state.chats, messages: state.messages, users: Object.values(state.users),
-        contacts: state.contacts, stories: state.stories, currentUser: state.currentUser,
-        lastActiveAt: Date.now(), autoDeleteInactivity: state.currentUser.autoDeleteInactivity ?? 0,
-      };
-      saveData('settings', workspace, workspaceKey).catch(() => {});
-    }, 500);
+    if (!workspaceKey || !sessionUserId || state.hydratedFor !== sessionUserId) return;
+    const workspace: StoredWorkspace = {
+      chats: state.chats, messages: state.messages, users: Object.values(state.users),
+      contacts: state.contacts, stories: state.stories, currentUser: state.currentUser,
+      lastActiveAt: Date.now(), autoDeleteInactivity: state.currentUser.autoDeleteInactivity ?? 0,
+    };
+    liveWorkspaceRef.current = { userId: sessionUserId, workspace };
+    const timer = setTimeout(() => { void persistWorkspace(sessionUserId, workspace); }, 150);
     return () => clearTimeout(timer);
   }, [workspaceKey, sessionUserId, state.hydratedFor, state.chats, state.messages, state.users, state.contacts, state.stories, state.currentUser]);
+
+  // Never lose the last thing written: when the page is hidden or closed (phone
+  // back button, tab switch, app switcher) the newest snapshot is saved straight
+  // away instead of waiting for the debounce.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const flush = () => {
+      const live = liveWorkspaceRef.current;
+      if (live) void persistWorkspace(live.userId, live.workspace);
+    };
+    const onHidden = () => { if (document.visibilityState === 'hidden') flush(); };
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onHidden);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onHidden);
+    };
+  }, []);
+
+  // Outbox: the moment a contact comes online, everything that could not reach
+  // them yet is handed to the network again — no waiting for the next retry tick.
+  const onlinePeers = Object.entries(state.peerPresence)
+    .filter(([, online]) => online)
+    .map(([id]) => id)
+    .sort()
+    .join(',');
+  useEffect(() => {
+    const me = state.session;
+    if (!me || !onlinePeers) return;
+    const waiting = stateRef.current.messages.filter(
+      message => message.senderId === 'user_me' && message.deliveryPending && !message.scheduledAt,
+    );
+    waiting.forEach(message => {
+      const peer = peerIdOfChat(stateRef.current.chats.find(c => c.id === message.chatId));
+      if (peer && network.send(peer, envelopeFor(message, me))) {
+        dispatch({ type: 'SET_DELIVERY', messageId: message.id, pending: false });
+      }
+    });
+  }, [onlinePeers, state.session, dispatch]);
 
   // Restore the signed-in account's workspace on launch, honouring inactivity auto-delete
   useEffect(() => {
@@ -554,10 +599,7 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
     let cancelled = false;
     (async () => {
       try {
-        const stored = await getData<{
-          chats: Chat[]; messages: Message[]; users: User[]; contacts: Contact[]; stories: Story[];
-          currentUser?: User; lastActiveAt?: number; autoDeleteInactivity?: 0 | 1 | 3 | 6;
-        }>('settings', workspaceKey);
+        const stored = await loadStoredWorkspace(sessionUserId);
         if (cancelled) return;
 
         // Nothing stored yet (or the content is unusable): this account starts fresh.
@@ -569,7 +611,7 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
         const months = stored.autoDeleteInactivity ?? 0;
         const idleMs = stored.lastActiveAt ? Date.now() - stored.lastActiveAt : 0;
         if (months > 0 && idleMs > months * 30 * 24 * 60 * 60 * 1000) {
-          await clearStore('settings');
+          await clearStoredWorkspace(sessionUserId);
           dispatch({ type: 'SET_HYDRATED', userId: sessionUserId });
           return;
         }

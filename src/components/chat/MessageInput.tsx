@@ -54,6 +54,16 @@ export function MessageInput({ chat }: Props) {
   // Circular video message
   const [videoNote, setVideoNote] = useState<{ active: boolean; url: string | null }>({ active: false, url: null });
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
+
+  // The live camera preview only exists once the recorder panel is on screen, so
+  // the stream is attached after that render — never lost to a timing race.
+  useEffect(() => {
+    const el = videoPreviewRef.current;
+    if (!el || !videoNote.active || !videoStreamRef.current) return;
+    el.srcObject = videoStreamRef.current;
+    void el.play().catch(() => { /* autoplay is muted, so this only fails if the tab is hidden */ });
+  }, [videoNote.active]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const captureRef = useRef<VoiceCapture | null>(null);
@@ -147,6 +157,7 @@ export function MessageInput({ chat }: Props) {
     captureRef.current = null;
     videoCaptureRef.current?.cancel();
     videoCaptureRef.current = null;
+    videoStreamRef.current = null;
     setClip(null);
     setVideoNote({ active: false, url: null });
     setIsRecording(false);
@@ -185,8 +196,8 @@ export function MessageInput({ chat }: Props) {
     try {
       const stream = await capture.start();
       videoCaptureRef.current = capture;
+      videoStreamRef.current = stream;
       setVideoNote({ active: true, url: null });
-      setTimeout(() => { if (videoPreviewRef.current) videoPreviewRef.current.srcObject = stream; }, 0);
     } catch (err) {
       setRecordError((err as Error).message || 'Camera access denied');
     }
@@ -195,6 +206,7 @@ export function MessageInput({ chat }: Props) {
   const stopVideoNote = async () => {
     const capture = videoCaptureRef.current;
     videoCaptureRef.current = null;
+    videoStreamRef.current = null;
     if (!capture) { setVideoNote({ active: false, url: null }); return; }
     try {
       const blob = await capture.stop();

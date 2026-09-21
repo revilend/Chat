@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, type ReactNode } from 'react';
 import { useApp } from '../store/AppContext';
 import { network } from '../net/network';
 import { clearSession, saveSession, type Session } from './session';
-import { isValidUserId } from '../utils/identity';
+import { isValidUserId, normalizeUserId } from '../utils/identity';
 
 interface AccountContextType {
   /** Signs in for real: loads this account's own workspace and connects it. */
@@ -39,9 +39,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }, [dispatch]);
 
   const addPeer = useCallback(async (rawId: string, name?: string, username?: string): Promise<boolean> => {
-    const userId = rawId.trim().toLowerCase();
+    const userId = normalizeUserId(rawId);
     if (!isValidUserId(userId)) {
-      throw new Error('That is not a valid address. Ask your friend for the address shown on their Contacts screen.');
+      throw new Error('That is not a valid ID. Ask your friend for their 6-digit Teleflow ID.');
     }
     dispatch({ type: 'ADD_PEER', userId, name: name || '', username: username || '' });
     network.trackContacts([userId]);

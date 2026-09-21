@@ -1,5 +1,5 @@
 import Peer, { type DataConnection, type MediaConnection } from 'peerjs';
-import { peerIdFor, userIdFromPeerId, shortId } from '../utils/identity';
+import { peerIdFor, userIdFromPeerId } from '../utils/identity';
 
 export type CloudStatus = 'off' | 'connecting' | 'online' | 'error';
 export type PeerState = 'online' | 'offline' | 'connecting';
@@ -317,9 +317,6 @@ class Network {
     this.emit({ type: 'status', status, detail });
   }
 
-  describe(userId: string): string {
-    return shortId(userId);
-  }
 }
 
 export const network = new Network();

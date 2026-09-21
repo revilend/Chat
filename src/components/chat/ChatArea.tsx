@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
 import { ChatHeader } from './ChatHeader';
 import { MessageBubble } from './MessageBubble';
@@ -9,9 +10,12 @@ import type { Message } from '../../types';
 
 export function ChatArea() {
   const { state, getChatMessages, getChat, dispatch } = useApp();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isAutoScroll, setIsAutoScroll] = useState(true);
+  /** True while the reader is sitting at the newest message. */
+  const stickToBottomRef = useRef(true);
+  /** Which message was last on screen, so we only react to genuinely new ones. */
+  const lastMessageKeyRef = useRef('');
+  const [showJumpToBottom, setShowJumpToBottom] = useState(false);
   const chat = getChat(state.activeChatId || '');
   const allMessages = getChatMessages(state.activeChatId || '');
   const messages = state.activeTopicId
@@ -19,17 +23,74 @@ export function ChatArea() {
     : allMessages;
   const pinnedMessages = messages.filter(m => m.isPinned && !m.deletedForEveryone);
 
-  useEffect(() => { if (isAutoScroll && messagesEndRef.current) messagesEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [messages, isAutoScroll]);
-  const handleScroll = useCallback(() => { if (!containerRef.current) return; const { scrollTop, scrollHeight, clientHeight } = containerRef.current; setIsAutoScroll(scrollHeight - scrollTop - clientHeight < 100); }, []);
-  useEffect(() => { setTimeout(() => messagesEndRef.current?.scrollIntoView(), 50); }, [state.activeChatId]);
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
 
-  // Search hit tracking
+  /** Jumps to the newest message. Never uses scrollIntoView: that scrolls every
+   *  ancestor as well, which is what used to fight the reader on a phone. */
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
+    stickToBottomRef.current = true;
+    setShowJumpToBottom(false);
+  }, []);
+
+  // Track how far up the reader has scrolled. Reading old messages must never
+  // snap back to the bottom.
   useEffect(() => {
-    if (!state.searchQuery || state.searchQuery.length < 2) { dispatch({ type: 'SET_SEARCH_HITS', hits: [], index: -1 }); return; }
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+      stickToBottomRef.current = distance < 120;
+      setShowJumpToBottom(distance > 400);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [state.activeChatId]);
+
+  // Opening a chat (or a topic) always lands on the newest message.
+  useEffect(() => {
+    lastMessageKeyRef.current = '';
+    stickToBottomRef.current = true;
+    setShowJumpToBottom(false);
+    const el = containerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [state.activeChatId, state.activeTopicId]);
+
+  // A new message only pulls the view down when it is ours or the reader is
+  // already at the bottom. Keyed on the last message, not on the array, so
+  // re-renders and typing updates can never yank the scroll position.
+  const lastMessageKey = lastMessage ? `${lastMessage.id}:${lastMessage.senderId}` : '';
+  useEffect(() => {
+    if (!lastMessageKey || lastMessageKey === lastMessageKeyRef.current) return;
+    const isFirstPaint = lastMessageKeyRef.current === '';
+    lastMessageKeyRef.current = lastMessageKey;
+    const isMine = lastMessage?.senderId === 'user_me';
+    if (!isFirstPaint && !isMine && !stickToBottomRef.current) return;
+    const el = containerRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+      stickToBottomRef.current = true;
+      setShowJumpToBottom(false);
+    });
+  }, [lastMessageKey, lastMessage]);
+
+  // Search hit tracking. Only dispatches when the hit list really changed, so a
+  // re-render can never turn into a dispatch loop.
+  useEffect(() => {
+    if (!state.searchQuery || state.searchQuery.length < 2) {
+      if (state.searchHits.length > 0) dispatch({ type: 'SET_SEARCH_HITS', hits: [], index: -1 });
+      return;
+    }
     const q = state.searchQuery.toLowerCase();
     const hits = messages.filter(m => m.text.toLowerCase().includes(q)).map(m => m.id);
+    const unchanged = hits.length === state.searchHits.length && hits.every((id, i) => id === state.searchHits[i]);
+    if (unchanged) return;
     dispatch({ type: 'SET_SEARCH_HITS', hits, index: hits.length > 0 ? 0 : -1 });
-  }, [state.searchQuery, messages, dispatch]);
+  }, [state.searchQuery, state.searchHits, messages, dispatch]);
 
   if (!chat) return null;
 
@@ -59,7 +120,7 @@ export function ChatArea() {
           </div>
         </div>
       )}
-      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 sm:px-4 md:px-[10%] lg:px-[16%] py-3">
+      <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-2.5 sm:px-4 md:px-[10%] lg:px-[16%] py-3">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-tg-text-secondary">
             <div className="w-16 h-16 rounded-full bg-tg-sidebar/70 flex items-center justify-center text-3xl mb-3 shadow-sm">💬</div>
@@ -68,8 +129,20 @@ export function ChatArea() {
           </div>
         )}
         <MessageList messages={messages} />
-        <div ref={messagesEndRef} />
+        {/* Breathing room so the last bubble is never glued to the composer */}
+        <div className="h-2" />
       </div>
+      {showJumpToBottom && (
+        <div className="relative">
+          <button
+            onClick={() => scrollToBottom('smooth')}
+            title="Jump to the newest message"
+            className="absolute -top-14 right-4 w-11 h-11 rounded-full bg-tg-elevated border border-white/10 shadow-xl flex items-center justify-center hover:bg-tg-hover transition-colors"
+          >
+            <ChevronDown size={20} className="text-tg-text" />
+          </button>
+        </div>
+      )}
       {state.voiceChatActive && state.voiceChatChatId === state.activeChatId && <VoiceChatOverlay />}
       <MessageInput chat={chat} />
       <CalendarViewer />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../../store/AppContext';
 import { Copy, Check, UserPlus, Bookmark, Sparkles, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { formatUserId } from '../../utils/identity';
 
 export function WelcomeScreen() {
   const { state, dispatch } = useApp();
@@ -41,20 +42,22 @@ export function WelcomeScreen() {
           </div>
         </div>
 
-        {/* Address card */}
+        {/* ID card */}
         <div className="mt-7 rounded-2xl bg-tg-sidebar border border-black/20 p-4 shadow-xl">
-          <div className="text-[11px] uppercase tracking-wide text-tg-text-secondary">Your address</div>
-          <div className="mt-1.5 font-mono text-[12px] text-tg-text break-all leading-relaxed">{address}</div>
+          <div className="text-[11px] uppercase tracking-wide text-tg-text-secondary">Your ID</div>
+          <div className="mt-1.5 text-center font-mono text-[34px] leading-tight tracking-[0.18em] text-tg-text">
+            {formatUserId(address)}
+          </div>
           <button
             onClick={copyAddress}
             className="mt-3 w-full h-10 rounded-lg bg-tg-accent text-white text-sm font-medium hover:bg-tg-accent-hover transition-colors flex items-center justify-center gap-2"
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
-            {copied ? 'Copied' : 'Copy my address'}
+            {copied ? 'Copied' : 'Copy my ID'}
           </button>
           <p className="mt-3 text-[11px] text-tg-text-secondary leading-relaxed">
-            Send this to a friend. When they add it under Contacts, their chat appears here and your messages
-            travel straight between your two devices.
+            Send these six digits to a friend. When they add them under Contacts, their chat appears here and
+            your messages travel straight between your two devices.
           </p>
         </div>
 
@@ -66,7 +69,7 @@ export function WelcomeScreen() {
             <UserPlus size={18} className="text-tg-accent" />
             <span className="flex-1">
               <span className="block text-sm text-tg-text">Add a contact</span>
-              <span className="block text-[11px] text-tg-text-secondary">Paste the address of someone you want to write to</span>
+              <span className="block text-[11px] text-tg-text-secondary">Paste the 6-digit ID of someone you want to write to</span>
             </span>
           </button>
           <button

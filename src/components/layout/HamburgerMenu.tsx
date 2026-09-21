@@ -3,6 +3,7 @@ import { useApp } from '../../store/AppContext';
 import { useAccount } from '../../auth/AccountContext';
 import { Settings, Moon, Sun, Users, Volume2, Phone, Bookmark, Archive, UserPlus, LogOut, IdCard, Check, Copy } from 'lucide-react';
 import { getAvatarColor, getInitials } from './ChatListItem';
+import { formatUserId } from '../../utils/identity';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InstallAppButton } from '../shared/InstallButton';
 
@@ -70,21 +71,24 @@ export function HamburgerMenu({ onClose }: Props) {
             </button>
           </div>
 
-          {/* Your address — this is what other people add to reach you */}
+          {/* Your ID — this is what other people add to reach you */}
           <div className="px-4 py-3.5 border-b border-white/5">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-tg-text-secondary">
-              <IdCard size={13} /> My address
+              <IdCard size={13} /> My ID
             </div>
-            <div className="mt-2 rounded-xl bg-black/25 p-2.5 font-mono text-[11px] text-tg-text break-all leading-relaxed">{address}</div>
+            <div className="mt-2 rounded-xl bg-black/25 py-3 text-center font-mono text-[30px] leading-none tracking-[0.18em] text-tg-text">
+              {formatUserId(address)}
+            </div>
             <button
               onClick={copyAddress}
               className="btn btn-primary mt-2.5 w-full h-10 rounded-xl text-xs"
             >
               {copied ? <Check size={14} /> : <Copy size={14} />}
-              {copied ? 'Copied' : 'Copy address'}
+              {copied ? 'Copied' : 'Copy my ID'}
             </button>
             <p className="mt-2 text-[10px] text-tg-text-secondary leading-relaxed">
-              Share this with a friend. They add it under Contacts → Add by address, and you can write to each other.
+              Share these six digits with a friend. They add them under Contacts → Add by ID, and you can write
+              to each other.
             </p>
           </div>
 

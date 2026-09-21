@@ -9,24 +9,47 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Every account listens under this prefix, so no other app can take the address. */
+export const PEER_PREFIX = 'teleflow-';
+
 /**
- * A real account identity derived from the login credentials:
- * the same username + password always produces the same user ID on any device,
- * while a different password produces a completely different one.
- * The full ID doubles as the peer address, so only people you share it with can reach you.
+ * The account ID: six digits, easy to read out loud and to type by hand.
+ *
+ * It is derived from the login credentials, so the same username + password
+ * always produces the same ID on any device — that ID is the address other
+ * people add you by, and only that exact password can ever reproduce it.
  */
-export async function deriveUserId(username: string, password: string): Promise<string> {
-  return (await sha256Hex(`tgw1:${normalizeUsername(username)}:${password}`)).slice(0, 32);
+export async function deriveAccountId(username: string, password: string): Promise<string> {
+  const hash = await sha256Hex(`teleflow:v2:${normalizeUsername(username)}:${password}`);
+  const value = parseInt(hash.slice(0, 12), 16) % 1_000_000;
+  return value.toString().padStart(6, '0');
 }
 
-/** PeerJS address for a user ID. */
+/**
+ * Accepts anything a person may paste — `784219`, `784 219`, `@784219`,
+ * `teleflow-784219` — and returns the bare six digits.
+ */
+export function normalizeUserId(value: string): string {
+  return value
+    .trim()
+    .replace(/^@/, '')
+    .replace(new RegExp(`^${PEER_PREFIX}`, 'i'), '')
+    .replace(/[\s-]/g, '');
+}
+
+/** A real account address: exactly six digits. */
+export function isValidUserId(value: string): boolean {
+  return /^\d{6}$/.test(normalizeUserId(value));
+}
+
+/** PeerJS address for a user ID — internal only, users never see this form. */
 export function peerIdFor(userId: string): string {
-  return `tgweb-${userId}`;
+  return `${PEER_PREFIX}${normalizeUserId(userId)}`;
 }
 
 /** Extracts the user ID from a peer address (returns null when it is not ours). */
 export function userIdFromPeerId(peerId: string): string | null {
-  return peerId.startsWith('tgweb-') ? peerId.slice('tgweb-'.length) : null;
+  return peerId.startsWith(PEER_PREFIX) ? peerId.slice(PEER_PREFIX.length) : null;
 }
 
 /** Human-readable safety number both sides can compare out of band. */
@@ -35,10 +58,13 @@ export async function safetyNumber(userA: string, userB: string): Promise<string
   return (hash.slice(0, 16).match(/.{4}/g) ?? []).join(' ');
 }
 
+/** The ID as it is shown to the user. */
 export function shortId(userId: string): string {
-  return `${userId.slice(0, 6)}…${userId.slice(-4)}`;
+  return normalizeUserId(userId);
 }
 
-export function isValidUserId(value: string): boolean {
-  return /^[0-9a-f]{32}$/.test(value.trim());
+/** Display form used in headings: "784 219". */
+export function formatUserId(userId: string): string {
+  const id = normalizeUserId(userId);
+  return id.length === 6 ? `${id.slice(0, 3)} ${id.slice(3)}` : id;
 }
