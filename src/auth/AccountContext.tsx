@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, type ReactNode } from 'react';
 import { useApp } from '../store/AppContext';
 import { network } from '../net/network';
 import { clearSession, saveSession, type Session } from './session';
-import { buildAccountWorkspace } from './workspace';
 import { isValidUserId } from '../utils/identity';
 
 interface AccountContextType {
@@ -27,12 +26,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback((session: Session) => {
     saveSession(session);
-    const workspace = buildAccountWorkspace(session);
-    dispatch({
-      type: 'SIGN_IN',
-      session,
-      state: { ...workspace, accounts: [{ id: `account_${session.userId}`, user: workspace.currentUser, isActive: true }] },
-    });
+    // Only the session is set here. The account's own chats, contacts and messages
+    // are loaded from storage by AppProvider, so signing in never shows one person
+    // the previous account's mailbox and never wipes what is already stored.
+    dispatch({ type: 'SIGN_IN', session });
   }, [dispatch]);
 
   const signOut = useCallback(() => {

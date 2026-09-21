@@ -79,15 +79,19 @@ export async function authenticate(
   const accounts = readAccounts();
   const registered = accounts.find(a => a.username === handle);
 
+  // A username already used here with another password is a typo or a different
+  // person — either way it must not silently open a different account.
   if (registered && registered.userId !== userId) {
-    throw new Error('That username is already registered with a different password.');
+    throw new Error(mode === 'signin'
+      ? 'That password does not match this username.'
+      : 'That username is already used here with a different password.');
   }
-  if (mode === 'signin' && !registered) {
-    // Not used in this browser yet. The address is still derivable, so this
-    // works on a new device — but the password must be the original one or the
-    // account would silently be a different person.
-    throw new Error('No account for that username in this browser. Create it first, or check the password.');
-  }
+
+  // Signing in with no local record is allowed on purpose: the address is derived
+  // from the credentials, so the same username and password open the same account
+  // on a new device, after clearing the browser, or in a private window. The
+  // password still has to be the original one — a wrong one derives a different
+  // address, which is exactly what keeps accounts apart.
 
   const name = (displayName.trim() || registered?.name || handle).slice(0, 40);
   const session: Session = {
@@ -105,7 +109,8 @@ export async function authenticate(
   return session;
 }
 
-/** Rebuilds a session object for an already-known account (demo / restore). */
-export function sessionFor(userId: string, username: string, name: string): Session {
-  return { userId, username, name, createdAt: Date.now() };
+/** Whether this browser has seen the account before (used for a friendly hint). */
+export function isKnownAccount(username: string): boolean {
+  const handle = normalizeUsername(username);
+  return readAccounts().some(a => a.username === handle);
 }

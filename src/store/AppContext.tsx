@@ -4,7 +4,7 @@ import { translations } from '../i18n';
 import { saveData, getData, clearStore } from '../db';
 import { playIncomingMessage, playOutgoingMessage } from '../utils/audio';
 import { parseInviteHash } from '../utils/invite';
-import { network, type CloudStatus } from '../net/network';
+import { network, type CloudStatus, type OutgoingEnvelope } from '../net/network';
 import { loadSession, type Session } from '../auth/session';
 import { isValidUserId, shortId } from '../utils/identity';
 import { buildAccountWorkspace } from '../auth/workspace';
@@ -43,6 +43,12 @@ export interface AppState {
   // --- Real accounts & real peer-to-peer connection ---
   /** Signed-in account. `null` shows the sign-in screen. */
   session: Session | null;
+  /**
+   * Which account's stored workspace has finished loading. Until this matches the
+   * signed-in account the workspace must not be written back, or the empty state
+   * the app boots with would overwrite the history on disk.
+   */
+  hydratedFor: string | null;
   /** Connection state of the peer-to-peer link service. */
   netStatus: CloudStatus;
   netDetail: string;
@@ -138,11 +144,13 @@ type Action =
   | { type: 'ADD_ANNOUNCEMENT'; chatId: string; text: string }
   | { type: 'REMOVE_ANNOUNCEMENT'; chatId: string; index: number }
   // --- Real accounts & peer-to-peer messaging ---
-  | { type: 'SIGN_IN'; session: Session; state: Partial<AppState> }
+  | { type: 'SIGN_IN'; session: Session }
   | { type: 'SIGN_OUT' }
+  | { type: 'SET_HYDRATED'; userId: string }
   | { type: 'SET_NET_STATUS'; status: CloudStatus; detail: string }
   | { type: 'ADD_PEER'; userId: string; name: string; username: string }
   | { type: 'SET_PEER_PRESENCE'; userId: string; online: boolean }
+  | { type: 'SET_DELIVERY'; messageId: string; pending: boolean }
   | { type: 'MARK_MESSAGES_READ'; messageIds: string[]; userId: string };
 
 /** The signed-out placeholder — nothing is rendered until an account signs in. */
@@ -181,6 +189,7 @@ const initialState: AppState = {
   nowPlaying: null,
   photoEditorSource: null,
   session: null,
+  hydratedFor: null,
   netStatus: 'off',
   netDetail: '',
   peerPresence: {},
@@ -193,22 +202,39 @@ function buildInitialState(): AppState {
   return { ...initialState, ...buildAccountWorkspace(session), session };
 }
 
-/** True for a chat that talks to a real person over the peer-to-peer network. */
-/** Converts a message into the envelope that travels over the data channel. */
-function toEnvelope(message: Message) {
-  if (message.type === 'photo' && message.photoUrl) {
-    return { kind: 'media' as const, id: message.id, timestamp: message.timestamp, media: { type: 'photo', url: message.photoUrl, name: 'photo' } };
-  }
-  if (message.type === 'video' && message.videoUrl) {
-    return { kind: 'media' as const, id: message.id, timestamp: message.timestamp, media: { type: 'video', url: message.videoUrl, name: 'video' } };
-  }
-  if (message.type === 'music' && message.audioUrl) {
-    return { kind: 'media' as const, id: message.id, timestamp: message.timestamp, media: { type: 'music', url: message.audioUrl, name: message.musicTitle || 'track', text: message.text } };
-  }
-  if (message.type === 'file' && message.fileUrl) {
-    return { kind: 'media' as const, id: message.id, timestamp: message.timestamp, media: { type: 'file', url: message.fileUrl, name: message.fileName || 'file', size: message.fileSize } };
-  }
-  return { kind: 'text' as const, id: message.id, text: message.text, timestamp: message.timestamp };
+/**
+ * The envelope that travels over the data channel for a real message.
+ *
+ * Every field is passed through, so photos, video messages, voice notes, music,
+ * files, locations, stickers, gifts and polls arrive complete — not just text.
+ * The few fields the receiving device decides for itself are stripped first.
+ */
+export function envelopeFor(message: Message, me: Session): OutgoingEnvelope {
+  const payload: Record<string, unknown> = { ...message };
+  delete payload.chatId;        // the recipient's own chat id for us
+  delete payload.senderId;      // always the sender on their side
+  delete payload.readBy;        // their unread state starts empty
+  delete payload.scheduledAt;   // it has already left the queue by now
+  delete payload.sendWhenOnline;
+  return {
+    kind: 'message', id: message.id, timestamp: message.timestamp, payload,
+    userId: me.userId, name: me.name, username: me.username,
+  };
+}
+
+/** Rebuilds the message on the receiving side from its envelope. */
+export function messageFromEnvelope(senderId: string, envelope: OutgoingEnvelope): Message {
+  const payload = (envelope.payload ?? {}) as Partial<Message>;
+  return {
+    ...payload,
+    id: envelope.id ?? `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    chatId: `chat_peer_${senderId}`,
+    senderId,
+    timestamp: envelope.timestamp ?? Date.now(),
+    readBy: [senderId],
+    type: payload.type ?? 'text',
+    text: payload.text ?? '',
+  };
 }
 
 export function peerIdOfChat(chat: Chat | undefined): string | null {
@@ -265,6 +291,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, messages: [...state.messages, action.message], chats: updated, replyTo: null, editingMessageId: null, lastActiveAt: Date.now() };
     }
     case 'RECEIVE_MESSAGE': {
+      // The same message can arrive twice (retry, second tab): keep one copy.
+      if (state.messages.some(m => m.id === action.message.id)) return state;
       // Respect Do Not Disturb, muted chats and silent messages
       const incomingChat = state.chats.find(c => c.id === action.message.chatId);
       const dndActive = (globalThis as Record<string, unknown>)._tgDND === true;
@@ -415,7 +443,10 @@ function reducer(state: AppState, action: Action): AppState {
     case 'ADD_ANNOUNCEMENT': return { ...state, chats: state.chats.map(c => c.id === action.chatId ? { ...c, announcements: [...(c.announcements || []), action.text] } : c) };
     case 'REMOVE_ANNOUNCEMENT': return { ...state, chats: state.chats.map(c => c.id === action.chatId ? { ...c, announcements: (c.announcements || []).filter((_, i) => i !== action.index) } : c) };
     // --- Real accounts ---
-    case 'SIGN_IN': return { ...state, ...action.state, session: action.session, netStatus: 'connecting', netDetail: '', activeChatId: null };
+    // Signing in only swaps the session: the chats on screen belong to the account
+    // we are leaving, and the new account's own workspace is loaded right after.
+    case 'SIGN_IN': return { ...state, session: action.session, hydratedFor: null, netStatus: 'connecting', netDetail: '', activeChatId: null };
+    case 'SET_HYDRATED': return { ...state, hydratedFor: action.userId };
     case 'SIGN_OUT': return { ...initialState };
     case 'SET_NET_STATUS': return { ...state, netStatus: action.status, netDetail: action.detail };
     // --- Real people ---
@@ -451,6 +482,7 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, users: { ...state.users, [action.userId]: peer }, peerPresence: { ...state.peerPresence, [action.userId]: action.online }, messages };
     }
     case 'MARK_MESSAGES_READ': return { ...state, messages: state.messages.map(m => (action.messageIds.includes(m.id) && !m.readBy.includes(action.userId)) ? { ...m, readBy: [...m.readBy, action.userId] } : m) };
+    case 'SET_DELIVERY': return { ...state, messages: state.messages.map(m => m.id === action.messageId ? { ...m, deliveryPending: action.pending } : m) };
     default: return state;
   }
 }
@@ -461,6 +493,11 @@ interface AppContextType {
   getChatMessages: (chatId: string) => Message[]; sendMessage: (chatId: string, text: string, extras?: Partial<Message>) => void;
   findUser: (query: string) => User | undefined;
   notifyTyping: (chatId: string) => void;
+  /** Sends any finished message (photo, voice, file, location, sticker…) to the other person too. */
+  deliver: (message: Message) => void;
+  /** Pushes an edit / a deletion to the other person's device. */
+  deliverEdit: (messageId: string, text: string) => void;
+  deliverDelete: (messageId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -486,9 +523,11 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
   // Every account owns its own workspace, so two people never share a mailbox.
   const workspaceKey = sessionUserId ? `workspace:${sessionUserId}` : null;
 
-  // Persist the workspace to IndexedDB (survives reload / app restart)
+  // Persist the workspace to IndexedDB (survives reload / app restart).
+  // Skipped until the account's own workspace has been read back: booting the app
+  // with an empty workspace must never overwrite what is stored on disk.
   useEffect(() => {
-    if (!workspaceKey) return;
+    if (!workspaceKey || state.hydratedFor !== sessionUserId) return;
     const timer = setTimeout(() => {
       const workspace = {
         chats: state.chats, messages: state.messages, users: Object.values(state.users),
@@ -498,7 +537,7 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
       saveData('settings', workspace, workspaceKey).catch(() => {});
     }, 500);
     return () => clearTimeout(timer);
-  }, [workspaceKey, state.chats, state.messages, state.users, state.contacts, state.stories, state.currentUser]);
+  }, [workspaceKey, sessionUserId, state.hydratedFor, state.chats, state.messages, state.users, state.contacts, state.stories, state.currentUser]);
 
   // Restore the signed-in account's workspace on launch, honouring inactivity auto-delete
   useEffect(() => {
@@ -510,11 +549,19 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
           chats: Chat[]; messages: Message[]; users: User[]; contacts: Contact[]; stories: Story[];
           currentUser?: User; lastActiveAt?: number; autoDeleteInactivity?: 0 | 1 | 3 | 6;
         }>('settings', workspaceKey);
-        if (cancelled || !stored?.currentUser) return;
+        if (cancelled) return;
+
+        // Nothing stored yet (or the content is unusable): this account starts fresh.
+        if (!stored?.currentUser) {
+          dispatch({ type: 'SET_HYDRATED', userId: sessionUserId });
+          return;
+        }
+
         const months = stored.autoDeleteInactivity ?? 0;
         const idleMs = stored.lastActiveAt ? Date.now() - stored.lastActiveAt : 0;
         if (months > 0 && idleMs > months * 30 * 24 * 60 * 60 * 1000) {
           await clearStore('settings');
+          dispatch({ type: 'SET_HYDRATED', userId: sessionUserId });
           return;
         }
         dispatch({
@@ -525,16 +572,13 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
             contacts: stored.contacts ?? [], stories: stored.stories ?? [], lastActiveAt: Date.now(),
           },
         });
-      } catch { /* first run for this account */ }
+      } catch { /* first run for this account */ } finally {
+        if (!cancelled) dispatch({ type: 'SET_HYDRATED', userId: sessionUserId });
+      }
     })();
     return () => { cancelled = true; };
   }, [sessionUserId]);
 
-  // Scheduled messages fire at their due time; "send when online" queue is released too
-  useEffect(() => {
-    const id = setInterval(() => dispatch({ type: 'RELEASE_DUE_MESSAGES' }), 3000);
-    return () => clearInterval(id);
-  }, []);
 
   // Invite links: opening #join/<chatId> joins the group/channel and opens it
   useEffect(() => {
@@ -601,21 +645,16 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
         dispatch({ type: 'TOGGLE_REACTION', messageId: envelope.id, emoji: envelope.emoji });
         return;
       }
-      if (envelope.kind === 'text' || envelope.kind === 'media') {
-        const media = envelope.media;
-        const message: Message = {
-          id: envelope.id || `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          chatId,
-          senderId: userId,
-          text: envelope.text ?? '',
-          timestamp: envelope.timestamp ?? Date.now(),
-          type: (media?.type as Message['type']) || 'text',
-          readBy: [userId],
-          ...(media?.type === 'photo' ? { photoUrl: media.url } : {}),
-          ...(media?.type === 'video' ? { videoUrl: media.url } : {}),
-          ...(media?.type === 'music' ? { audioUrl: media.url, musicTitle: media.name } : {}),
-          ...(media?.type === 'file' ? { fileUrl: media.url, fileName: media.name, fileSize: media.size } : {}),
-        };
+      if (envelope.kind === 'edit' && envelope.id && typeof envelope.text === 'string') {
+        dispatch({ type: 'EDIT_MESSAGE', messageId: envelope.id, newText: envelope.text });
+        return;
+      }
+      if (envelope.kind === 'delete' && envelope.id) {
+        dispatch({ type: 'DELETE_MESSAGE', messageId: envelope.id });
+        return;
+      }
+      if (envelope.kind === 'message') {
+        const message = messageFromEnvelope(userId, envelope);
         // The other person exists the moment their message arrives
         dispatch({ type: 'ADD_PEER', userId, name: envelope.name || envelope.username || shortId(userId), username: envelope.username || '' });
         dispatch({ type: 'RECEIVE_MESSAGE', message });
@@ -687,6 +726,98 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
   const getChat = useCallback((id: string) => state.chats.find(c => c.id === id), [state.chats]);
   const getChatMessages = useCallback((chatId: string) => state.messages.filter(m => m.chatId === chatId).sort((a, b) => (a.scheduledAt ?? a.timestamp) - (b.scheduledAt ?? b.timestamp)), [state.messages]);
 
+  /** Hands one finished message to the real person on the other side. */
+  const transmit = useCallback((message: Message): boolean => {
+    const me = stateRef.current.session;
+    const chat = stateRef.current.chats.find(c => c.id === message.chatId);
+    const peer = peerIdOfChat(chat);
+    if (!peer || !me || message.senderId !== 'user_me') return false;
+    return network.send(peer, envelopeFor(message, me));
+  }, []);
+
+  /**
+   * The one way an outgoing message leaves the app: it is added to this device's
+   * own history, mirrored to other tabs, and delivered to the other person.
+   * Everything that can be written — text, photos, voice, files, locations,
+   * stickers, gifts — goes through here, so nothing stays on one device only.
+   */
+  const deliver = useCallback((message: Message) => {
+    dispatch({ type: 'SEND_MESSAGE', message });
+    channelRef.current?.postMessage({ type: 'NEW_MESSAGE', payload: message });
+    if (message.scheduledAt) return;
+    // When the other person is not reachable right now the message is marked as
+    // still on its way, and the retry loop below keeps trying until it lands.
+    const sent = transmit(message);
+    dispatch({ type: 'SET_DELIVERY', messageId: message.id, pending: !sent });
+  }, [transmit]);
+
+  // Edits and deletions reach the other person too
+  const deliverEdit = useCallback((messageId: string, text: string) => {
+    const me = stateRef.current.session;
+    const message = stateRef.current.messages.find(m => m.id === messageId);
+    const peer = message ? peerIdOfChat(stateRef.current.chats.find(c => c.id === message.chatId)) : null;
+    if (peer && me) network.send(peer, { kind: 'edit', id: messageId, text, userId: me.userId });
+  }, []);
+
+  const deliverDelete = useCallback((messageId: string) => {
+    const me = stateRef.current.session;
+    const message = stateRef.current.messages.find(m => m.id === messageId);
+    const peer = message ? peerIdOfChat(stateRef.current.chats.find(c => c.id === message.chatId)) : null;
+    if (peer && me) network.send(peer, { kind: 'delete', id: messageId, userId: me.userId });
+  }, []);
+
+  // Scheduled messages are really transmitted at their due time — not just shown
+  // as sent — and only then released into the chat on this device as well.
+  const sentScheduledRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const tick = () => {
+      const now = Date.now();
+      stateRef.current.messages.forEach(message => {
+        if (!message.scheduledAt || message.scheduledAt > now) return;
+        if (sentScheduledRef.current.has(message.id)) return;
+        sentScheduledRef.current.add(message.id);
+        transmit(message);
+      });
+      dispatch({ type: 'RELEASE_DUE_MESSAGES' });
+    };
+    tick();
+    const id = setInterval(tick, 3000);
+    return () => clearInterval(id);
+  }, [transmit]);
+
+  // Anything that has not reached the other device yet is retried until it does.
+  // The receiving side ignores a message id it already has, so a retry that races
+  // the first copy never shows up twice.
+  useEffect(() => {
+    if (!sessionUser) return;
+    const retry = () => {
+      stateRef.current.messages.forEach(message => {
+        if (message.senderId !== 'user_me' || !message.deliveryPending || message.scheduledAt) return;
+        const peer = peerIdOfChat(stateRef.current.chats.find(c => c.id === message.chatId));
+        if (peer && network.isOnline(peer) && transmit(message)) {
+          dispatch({ type: 'SET_DELIVERY', messageId: message.id, pending: false });
+        }
+      });
+    };
+    retry();
+    const id = setInterval(retry, 5000);
+    return () => clearInterval(id);
+  }, [sessionUser, transmit, state.messages]);
+
+  // Messages still waiting to go out ("send when online", or something written
+  // just before the app was closed) are handed to the network queue again on
+  // launch: it keeps them and delivers the moment the other person is reachable.
+  const requeuedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!sessionUser) return;
+    state.messages.forEach(message => {
+      if (message.senderId !== 'user_me' || !message.sendWhenOnline || message.scheduledAt) return;
+      if (requeuedRef.current.has(message.id)) return;
+      requeuedRef.current.add(message.id);
+      transmit(message);
+    });
+  }, [sessionUser, state.messages, transmit]);
+
   const sendMessage = useCallback((chatId: string, text: string, extras: Partial<Message> = {}) => {
     const chat = state.chats.find(c => c.id === chatId);
     // Feature 11: Anti-spam check
@@ -707,15 +838,9 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
       }
     }
     const message: Message = { id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, chatId, senderId: 'user_me', text, timestamp: Date.now(), type: 'text', readBy: ['user_me'], ...extras };
-    dispatch({ type: 'SEND_MESSAGE', message });
-    channelRef.current?.postMessage({ type: 'NEW_MESSAGE', payload: message });
-
-    // A real person on the other end: the message goes straight to their device
-    const peer = peerIdOfChat(chat);
-    const me = stateRef.current.session;
-    if (peer && me && !extras.scheduledAt) {
-      network.send(peer, { ...toEnvelope(message), userId: me.userId, name: me.name, username: me.username });
-    }
+    // Everything leaves through one door: history here, other tabs, and the
+    // other person's device over the peer-to-peer link.
+    deliver(message);
     if (chat?.type === 'private' && chat.name === 'Helper Bot') {
       const botReply = getBotReply(text);
       if (botReply) {
@@ -725,10 +850,10 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
       }
     }
     // Every other chat belongs to a real person: nothing is answered on their behalf.
-  }, [state.chats]);
+  }, [state.chats, deliver]);
 
   return (
-    <AppContext.Provider value={{ state, dispatch, t, getUser, getChat, getChatMessages, sendMessage, findUser, notifyTyping }}>
+    <AppContext.Provider value={{ state, dispatch, t, getUser, getChat, getChatMessages, sendMessage, findUser, notifyTyping, deliver, deliverEdit, deliverDelete }}>
       {children}
     </AppContext.Provider>
   );

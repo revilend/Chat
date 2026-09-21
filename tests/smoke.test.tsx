@@ -58,7 +58,8 @@ g.AudioContext = class { state = 'running'; currentTime = 0; createOscillator() 
 import { renderToString } from 'react-dom/server';
 import { createElement, Fragment } from 'react';
 import App, { AppInner } from '../src/App';
-import { AppProvider, type AppState } from '../src/store/AppContext';
+import { AppProvider, envelopeFor, messageFromEnvelope, type AppState } from '../src/store/AppContext';
+import type { Message } from '../src/types';
 import { AccountProvider } from '../src/auth/AccountContext';
 import { AuthScreen } from '../src/components/auth/AuthScreen';
 import { ContactsModal } from '../src/components/modals/ContactsModal';
@@ -175,7 +176,47 @@ render('signed in with an empty workspace', surface(
   { session, currentUser: peerState.currentUser, users: {}, chats: [], messages: [], contacts: [], activeChatId: null },
 ));
 
-// ═══ 5. Phone layout: one pane at a time, never two squeezed side by side ═══
+// ═══ 5. Every message type survives the trip to the other person ═══
+// The wire format is not text-only: photos, voice notes, files, locations,
+// stickers and gifts all arrive on the other device as themselves.
+const me = { userId: ME, username: 'aziza', name: 'Aziza', createdAt: Date.now() };
+const outgoing: Array<[string, Message]> = [
+  ['plain text', { id: 'm1', chatId: 'chat_peer_x', senderId: 'user_me', text: 'Salom', timestamp: 1000, type: 'text', readBy: ['user_me'] }],
+  ['photo', { id: 'm2', chatId: 'chat_peer_x', senderId: 'user_me', text: 'screenshot', timestamp: 1000, type: 'photo', photoUrl: 'data:image/jpeg;base64,AAA', readBy: ['user_me'] }],
+  ['voice note', { id: 'm3', chatId: 'chat_peer_x', senderId: 'user_me', text: '', timestamp: 1000, type: 'voice', audioUrl: 'data:audio/wav;base64,BBB', audioDuration: 7, audioWaveform: [0.2, 0.6], readBy: ['user_me'] }],
+  ['video message', { id: 'm4', chatId: 'chat_peer_x', senderId: 'user_me', text: '', timestamp: 1000, type: 'video', videoNote: true, videoUrl: 'data:video/webm;base64,CCC', readBy: ['user_me'] }],
+  ['document', { id: 'm5', chatId: 'chat_peer_x', senderId: 'user_me', text: '', timestamp: 1000, type: 'file', fileUrl: 'data:application/pdf;base64,DDD', fileName: 'report.pdf', fileSize: 2048, readBy: ['user_me'] }],
+  ['music', { id: 'm6', chatId: 'chat_peer_x', senderId: 'user_me', text: '', timestamp: 1000, type: 'music', audioUrl: 'data:audio/mpeg;base64,EEE', musicTitle: 'Track', readBy: ['user_me'] }],
+  ['location', { id: 'm7', chatId: 'chat_peer_x', senderId: 'user_me', text: '', timestamp: 1000, type: 'location', location: { lat: 41.31, lng: 69.24 }, readBy: ['user_me'] }],
+  ['sticker', { id: 'm8', chatId: 'chat_peer_x', senderId: 'user_me', text: '🦄', timestamp: 1000, type: 'sticker', readBy: ['user_me'] }],
+  ['gift', { id: 'm9', chatId: 'chat_peer_x', senderId: 'user_me', text: '', timestamp: 1000, type: 'gift', gift: { emoji: '🎁', name: 'Gift' }, readBy: ['user_me'] }],
+  ['view-once photo', { id: 'm10', chatId: 'chat_peer_x', senderId: 'user_me', text: '', timestamp: 1000, type: 'photo', photoUrl: 'data:image/jpeg;base64,FFF', viewOnce: true, readBy: ['user_me'] }],
+];
+
+let wireFailures = 0;
+for (const [label, message] of outgoing) {
+  const arrived = messageFromEnvelope(PEER, envelopeFor(message, me));
+  const sameKind = arrived.type === message.type;
+  const sameBody = arrived.text === message.text
+    && arrived.photoUrl === message.photoUrl
+    && arrived.videoUrl === message.videoUrl
+    && arrived.audioUrl === message.audioUrl
+    && arrived.fileUrl === message.fileUrl
+    && JSON.stringify(arrived.location) === JSON.stringify(message.location)
+    && arrived.viewOnce === message.viewOnce;
+  const wellAddressed = arrived.id === message.id && arrived.senderId === PEER && arrived.chatId === `chat_peer_${PEER}` && arrived.readBy.length === 1;
+  if (sameKind && sameBody && wellAddressed) console.log(`✅ ${label} arrives complete`);
+  else { wireFailures++; console.log(`❌ ${label} did not survive the wire (kind=${sameKind} body=${sameBody} addressed=${wellAddressed})`); }
+}
+if (wireFailures) failures += wireFailures;
+
+const queued = messageFromEnvelope(PEER, envelopeFor(
+  { id: 'm11', chatId: 'chat_peer_x', senderId: 'user_me', text: 'later', timestamp: 1, type: 'text', readBy: ['user_me'], scheduledAt: Date.now() + 60000, sendWhenOnline: true }, me,
+));
+if (queued.scheduledAt === undefined && queued.sendWhenOnline === undefined) console.log('✅ a message still waiting is never delivered early');
+else { failures++; console.log('❌ queued fields leaked onto the wire'); }
+
+// ═══ 6. Phone layout: one pane at a time, never two squeezed side by side ═══
 // Hiding is done with classes, so the assertion reads the pane's own class list.
 function paneVisible(html: string, testId: string) {
   const i = html.indexOf(`data-testid="${testId}"`);

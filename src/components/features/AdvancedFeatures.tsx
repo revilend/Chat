@@ -423,7 +423,7 @@ export function PrintChatButton() {
    Feature 13: Media Send Confirmation Modal
    ═══════════════════════════════════════════════════════════════ */
 export function MediaConfirmModal() {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, deliver } = useApp();
   const [sending, setSending] = useState(false);
   if (!state.showMediaConfirm) return null;
   const chatId = state.activeChatId || '';
@@ -439,7 +439,8 @@ export function MediaConfirmModal() {
           message.audioWaveform = waveformFromBuffer(buffer, 40);
         } catch { /* keep the file as-is */ }
       }
-      dispatch({ type: 'SEND_MESSAGE', message });
+      // Goes to the other person's device as well, not only into this chat.
+      deliver(message);
     }
     setSending(false);
     dispatch({ type: 'CONFIRM_SEND_MEDIA' });
@@ -455,7 +456,7 @@ export function MediaConfirmModal() {
                 {f.preview ? <img src={f.preview} className="w-12 h-12 rounded object-cover" alt="" /> : <div className="w-12 h-12 rounded bg-tg-input flex items-center justify-center"><Film size={20} className="text-tg-text-secondary" /></div>}
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-tg-text truncate">{f.name}</div>
-                  <div className="text-[10px] text-tg-text-secondary">{f.type || 'file'} • {formatBytes(f.size)}{f.tooLarge ? ' • too large to store, name only' : ''}</div>
+                  <div className="text-[10px] text-tg-text-secondary">{f.type || 'file'} • {formatBytes(f.size)}{f.tooLarge ? ' • too large to send — name only' : ''}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-2">

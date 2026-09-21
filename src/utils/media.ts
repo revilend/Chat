@@ -1,7 +1,18 @@
 import type { Message, PendingMedia } from '../types';
 
-/** Files above this size are sent as a name-only file message (IndexedDB/state stay healthy). */
-export const MAX_INLINE_MEDIA_BYTES = 4 * 1024 * 1024;
+/**
+ * Photos are resized before they travel: a data channel cannot reliably carry a
+ * multi-megabyte data URL, so an untouched camera photo would simply never arrive.
+ */
+export const MAX_PHOTO_DIMENSION = 1280;
+export const PHOTO_QUALITY = 0.78;
+
+/**
+ * A file larger than this cannot be handed to the other person device-to-device:
+ * it would exhaust both the data channel and local storage. Those are sent as a
+ * name-only message that says so, instead of pretending to be delivered.
+ */
+export const MAX_SEND_BYTES = 12 * 1024 * 1024;
 
 export function fileToDataUrl(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -27,16 +38,56 @@ export function formatBytes(bytes: number): string {
 /** Turns a picked file into a pending-media record with its real contents attached. */
 export async function describeFile(file: File): Promise<PendingMedia> {
   const type = file.type || 'application/octet-stream';
-  const tooLarge = file.size > MAX_INLINE_MEDIA_BYTES;
-  const dataUrl = tooLarge ? undefined : await fileToDataUrl(file);
-  return {
-    name: file.name,
-    type,
-    size: file.size,
-    dataUrl,
-    preview: type.startsWith('image/') ? dataUrl : undefined,
-    tooLarge,
-  };
+  const tooLarge = file.size > MAX_SEND_BYTES;
+
+  if (tooLarge) {
+    return { name: file.name, type, size: file.size, dataUrl: undefined, preview: undefined, tooLarge };
+  }
+
+  // Images are re-encoded so what is sent is small enough to actually arrive.
+  if (type.startsWith('image/')) {
+    const original = await fileToDataUrl(file);
+    const compact = await compressImage(original);
+    return {
+      name: file.name, type: 'image/jpeg', size: Math.round(compact.length * 0.75),
+      dataUrl: compact, preview: compact, tooLarge: false,
+    };
+  }
+
+  const dataUrl = await fileToDataUrl(file);
+  return { name: file.name, type, size: file.size, dataUrl, preview: undefined, tooLarge: false };
+}
+
+/**
+ * Re-encodes an image data URL to a smaller JPEG, keeping its aspect ratio.
+ * Falls back to the original when the browser cannot decode it.
+ */
+export async function compressImage(dataUrl: string, maxDimension = MAX_PHOTO_DIMENSION, quality = PHOTO_QUALITY): Promise<string> {
+  try {
+    const image = await loadImage(dataUrl);
+    const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+    if (scale === 1 && dataUrl.startsWith('data:image/jpeg') && dataUrl.length < 400_000) return dataUrl;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+    canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return dataUrl;
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const encoded = canvas.toDataURL('image/jpeg', quality);
+    return encoded.length < dataUrl.length ? encoded : dataUrl;
+  } catch {
+    return dataUrl;
+  }
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Could not read that image'));
+    image.src = src;
+  });
 }
 
 /** Picks the message type that matches a MIME type. */
@@ -59,7 +110,13 @@ export function messageFromPendingMedia(media: PendingMedia, chatId: string, sen
     readBy: [senderId],
   };
   if (!media.dataUrl) {
-    return { ...base, type: 'file', text: `📎 ${media.name}`, fileName: media.name, fileSize: media.size };
+    return {
+      ...base,
+      type: 'file',
+      text: `📎 ${media.name} — this file is larger than ${formatBytes(MAX_SEND_BYTES)} and cannot be sent device-to-device`,
+      fileName: media.name,
+      fileSize: media.size,
+    };
   }
   const type = messageTypeForMime(media.type);
   if (type === 'photo') return { ...base, type: 'photo', photoUrl: media.dataUrl, text: '', viewOnce: media.viewOnce };

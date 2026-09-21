@@ -51,7 +51,7 @@ export function ChatArea() {
       {/* Feature 17: Announcement banner */}
       <AnnouncementBanner />
       {pinnedMessages.length > 0 && <div className="bg-tg-reply-bar border-b border-black/20 px-4 py-2 flex items-center gap-2"><span className="text-xs text-tg-accent font-medium">📌 Pinned Message</span><span className="text-xs text-tg-text-secondary truncate flex-1">{pinnedMessages[pinnedMessages.length - 1].text}</span></div>}
-      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-3 md:px-[12%] lg:px-[18%] py-4">
+      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-4 md:px-[10%] lg:px-[16%] py-4">
         {messages.length === 0 && <div className="flex flex-col items-center justify-center h-full text-tg-text-secondary"><div className="text-4xl mb-3">💬</div><div className="text-sm">No messages yet</div></div>}
         <MessageList messages={messages} />
         <div ref={messagesEndRef} />

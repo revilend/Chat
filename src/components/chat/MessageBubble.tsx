@@ -11,7 +11,7 @@ interface Props { message: Message; isGrouped: boolean; isSelected: boolean; }
 const quickReactions = ['👍', '❤️', '🔥', '😂', '👏', '⚡'];
 
 export function MessageBubble({ message, isGrouped, isSelected }: Props) {
-  const { state, dispatch, getUser, t } = useApp();
+  const { state, dispatch, getUser, t, deliverDelete } = useApp();
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
   const [viewOnceBurnt, setViewOnceBurnt] = useState(false);
@@ -61,11 +61,11 @@ export function MessageBubble({ message, isGrouped, isSelected }: Props) {
   };
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isGrouped ? 'mt-0.5' : 'mt-3'} px-1 group`} ref={contextRef}>
-      <div className={`relative max-w-[420px] min-w-[80px] ${isMe ? 'ml-auto' : 'mr-auto'}`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isGrouped ? 'mt-0.5' : 'mt-3'} group`} ref={contextRef}>
+      <div className={`relative max-w-[85%] sm:max-w-[420px] ${isMe ? 'ml-auto' : 'mr-auto'}`}>
         {isSelected && <div className="absolute inset-0 bg-tg-accent/20 rounded-xl z-10 border-2 border-tg-accent" />}
 
-        <div className={`relative rounded-xl px-3 py-1.5 ${isMe ? 'bg-tg-outgoing text-white' : 'bg-tg-incoming text-tg-text'} ${message.isPinned ? 'ring-1 ring-tg-accent/50' : ''} ${!isGrouped && isMe ? 'bubble-tail-out' : ''} ${!isGrouped && !isMe ? 'bubble-tail-in' : ''}`}
+        <div className={`relative bubble px-3 py-1.5 ${isMe ? 'bg-tg-outgoing text-white' : 'bg-tg-incoming text-tg-text'} ${message.isPinned ? 'ring-1 ring-tg-accent/50' : ''}`}
           onClick={() => { if (state.selectedMessages.length > 0) dispatch({ type: 'SELECT_MESSAGE', messageId: message.id }); }}
           onContextMenu={(e) => { e.preventDefault(); setShowContextMenu(true); }}>
 
@@ -104,7 +104,7 @@ export function MessageBubble({ message, isGrouped, isSelected }: Props) {
           {message.type === 'poll' && message.poll && <PollDisplay poll={message.poll} messageId={message.id} isMe={isMe} />}
           {message.type === 'gift' && message.gift && <div className="text-center py-2"><div className="text-4xl animate-bounce">{message.gift.emoji}</div><div className={`text-xs mt-1 ${isMe ? 'text-white/60' : 'text-tg-text-secondary'}`}>{message.gift.name}</div></div>}
           {message.type === 'location' && message.location && (
-            <div className="rounded-lg overflow-hidden bg-tg-sidebar min-w-[240px] mb-1">
+            <div className="rounded-lg overflow-hidden bg-tg-sidebar w-[min(280px,70vw)] mb-1">
               {/* Real OpenStreetMap snapshot of the shared coordinates */}
               <iframe
                 title={`Map ${message.location.lat.toFixed(4)}, ${message.location.lng.toFixed(4)}`}
@@ -143,6 +143,7 @@ export function MessageBubble({ message, isGrouped, isSelected }: Props) {
             {message.editedAt && <span className={`text-[10px] ${isMe ? 'text-white/50' : 'text-tg-text-secondary'}`}>edited</span>}
             {message.scheduledAt && <span className="text-[10px] text-amber-400" title="Scheduled message">🕐 {formatTime(message.scheduledAt)}</span>}
             {message.sendWhenOnline && <span className="text-[10px]" title="Queued until the recipient is online">⏳</span>}
+            {isMe && message.deliveryPending && !message.sendWhenOnline && <span className="text-[10px] opacity-80" title="Not delivered yet — will send when they are reachable">🕓</span>}
             {message.sentWithoutSound && <span className="text-[10px]" title="Sent without sound">🔇</span>}
             <span className={`text-[11px] ${isMe ? 'text-tg-text-time-out' : 'text-tg-text-time-in'}`}>{formatTime(message.timestamp)}</span>
             {isMe && (message.readBy.length > 1 ? <CheckCheck size={14} className="text-tg-accent" /> : <Check size={14} className="text-white/50" />)}
@@ -180,7 +181,7 @@ export function MessageBubble({ message, isGrouped, isSelected }: Props) {
                 {/* Feature 18: Print */}
                 <CtxItem icon={<Printer size={16} />} label="Print Chat" onClick={() => { window.print(); setShowContextMenu(false); }} />
                 <div className="my-1 border-b border-black/20" />
-                {isMe && <CtxItem icon={<Trash2 size={16} className="text-tg-red" />} label={t('delete')} onClick={() => { dispatch({ type: 'DELETE_MESSAGE', messageId: message.id }); setShowContextMenu(false); }} danger />}
+                {isMe && <CtxItem icon={<Trash2 size={16} className="text-tg-red" />} label={t('delete')} onClick={() => { dispatch({ type: 'DELETE_MESSAGE', messageId: message.id }); deliverDelete(message.id); setShowContextMenu(false); }} danger />}
               </div>
             </motion.div>
           )}
@@ -226,7 +227,7 @@ function SplitBillCard({ splitBill, messageId }: { splitBill: NonNullable<Messag
   const pp = splitBill.totalAmount / splitBill.participants.length;
   const allPaid = splitBill.participants.every(p => p.paid);
   return (
-    <div className="bg-tg-bg/50 rounded-lg p-3 mt-1 border border-tg-accent/20 min-w-[220px]">
+    <div className="bg-tg-bg/50 rounded-lg p-3 mt-1 border border-tg-accent/20 w-[min(260px,68vw)]">
       <div className="text-sm font-medium text-tg-accent mb-1">💰 {splitBill.title}</div>
       <div className="text-xs text-tg-text-secondary mb-2">Total: {splitBill.totalAmount} • {splitBill.participants.length} people • {pp.toFixed(2)} each</div>
       {splitBill.participants.map(p => <div key={p.userId} className="flex items-center justify-between py-1 text-xs"><span className="text-tg-text">{getUser(p.userId)?.name || p.userId}</span>{p.paid ? <span className="text-tg-green">✓ Paid</span> : <button onClick={() => dispatch({ type: 'MARK_SPLIT_PAID', messageId, userId: p.userId })} className="text-tg-accent hover:underline">Mark paid</button>}</div>)}
@@ -240,7 +241,7 @@ function PollDisplay({ poll, messageId, isMe }: { poll: NonNullable<Message['pol
   const total = poll.options.reduce((s, o) => s + o.votes.length, 0);
   const hasVoted = poll.options.some(o => o.votes.includes('user_me'));
   return (
-    <div className="min-w-[220px]">
+    <div className="w-[min(260px,68vw)]">
       <div className="text-[14px] font-medium mb-2">📊 {poll.question}</div>
       {poll.options.map((o, i) => { const pct = total > 0 ? Math.round((o.votes.length / total) * 100) : 0; return <button key={i} onClick={(e) => { e.stopPropagation(); if (!hasVoted) dispatch({ type: 'VOTE_POLL', messageId, optionIndex: i }); }} className={`w-full relative rounded-lg px-3 py-2 mb-1 text-left overflow-hidden ${hasVoted ? 'cursor-default' : 'hover:bg-white/10'} ${o.votes.includes('user_me') ? 'ring-1 ring-tg-accent' : ''}`}>{hasVoted && <div className="absolute inset-0 bg-tg-accent/20" style={{ width: `${pct}%` }} />}<div className="relative flex items-center justify-between"><div className="flex items-center gap-2">{!hasVoted && <div className="w-4 h-4 rounded-full border-2 border-tg-text-secondary/50" />}<span className="text-sm">{o.text}</span></div>{hasVoted && <span className="text-xs font-medium text-tg-accent">{pct}%</span>}</div></button>; })}
       <div className={`text-[11px] mt-1 ${isMe ? 'text-white/50' : 'text-tg-text-secondary'}`}>{total} votes{poll.isAnonymous ? ' • Anonymous' : ''}</div>

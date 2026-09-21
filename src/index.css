@@ -73,26 +73,12 @@ body {
   filter: none;
 }
 
-/* Message bubble tail */
-.bubble-tail-out::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  right: -8px;
-  width: 0;
-  height: 0;
-  border-left: 8px solid #2b5278;
-  border-top: 8px solid transparent;
-}
-.bubble-tail-in::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: -8px;
-  width: 0;
-  height: 0;
-  border-right: 8px solid #182533;
-  border-top: 8px solid transparent;
+/* Message bubbles sit inside the chat padding; nothing may stick out past the
+   bubble edge, which is what used to push the layout wider than the screen. */
+.bubble {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 /* Audio waveform */

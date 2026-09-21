@@ -20,7 +20,7 @@ const gifts = [
 ];
 
 export function GiftModal() {
-  const { state, dispatch, t } = useApp();
+  const { state, dispatch, deliver, t } = useApp();
   const [sent, setSent] = useState(false);
   const [confetti, setConfetti] = useState<{x: number; y: number; emoji: string}[]>([]);
 
@@ -35,7 +35,7 @@ export function GiftModal() {
       gift,
       readBy: ['user_me'],
     };
-    dispatch({ type: 'SEND_MESSAGE', message: msg });
+    deliver(msg);
 
     // Confetti
     const pieces = Array.from({ length: 30 }, () => ({

@@ -55,9 +55,17 @@ let wrongPasswordRejected = false;
 try { await authenticate('signin', 'aziza', 'nope-not-it', ''); } catch { wrongPasswordRejected = true; }
 check('a wrong password cannot open the account', wrongPasswordRejected);
 
-let unknownRejected = false;
-try { await authenticate('signin', 'stranger', 'secret123', ''); } catch { unknownRejected = true; }
-check('sign in refuses an unknown username', unknownRejected);
+// Signing in on a device that has never seen the account must work: the address
+// comes from the credentials, so the same password opens the same account.
+store.clear();
+const onNewDevice = await authenticate('signin', 'aziza', 'secret123', '');
+check('sign in works on a device with no stored account', onNewDevice.userId === deviceA);
+check('the new device reuses the same address', onNewDevice.userId === deviceA);
+check('the account is remembered after that sign in', knownAccounts().some(a => a.userId === deviceA));
+
+// A brand new username simply becomes a new account instead of failing.
+const fresh = await authenticate('signin', 'bekzod', 'secret123', '');
+check('a never-seen username signs in as its own account', fresh.userId === otherUser);
 
 let shortRejected = false;
 try { await authenticate('signup', 'ab', 'secret123', ''); } catch { shortRejected = true; }

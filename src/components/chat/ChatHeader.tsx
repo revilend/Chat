@@ -31,22 +31,22 @@ export function ChatHeader({ chat }: { chat: Chat }) {
   };
 
   return (
-    <div className="flex items-center h-[56px] px-2 bg-tg-header border-b border-black/20 flex-shrink-0">
-      <button onClick={() => dispatch({ type: 'SET_ACTIVE_CHAT', chatId: null })} className="md:hidden p-2 rounded-full hover:bg-tg-hover"><ArrowLeft size={20} className="text-tg-text-secondary" /></button>
-      <button onClick={() => dispatch({ type: 'TOGGLE_PROFILE' })} className="flex items-center gap-3 px-1 hover:bg-tg-hover rounded-lg py-1 transition-colors">
-        <div className="relative">
+    <div className="flex items-center gap-0.5 h-[56px] px-2 bg-tg-header border-b border-black/20 flex-shrink-0 min-w-0">
+      <button onClick={() => dispatch({ type: 'SET_ACTIVE_CHAT', chatId: null })} className="md:hidden shrink-0 p-2 rounded-full hover:bg-tg-hover"><ArrowLeft size={20} className="text-tg-text-secondary" /></button>
+      <button onClick={() => dispatch({ type: 'TOGGLE_PROFILE' })} className="flex items-center gap-3 px-1 hover:bg-tg-hover rounded-lg py-1 transition-colors min-w-0">
+        <div className="relative shrink-0">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm ${chat.type === 'saved' ? 'bg-tg-accent' : getAvatarColor(chat.id)}`}>
             {chat.type === 'saved' ? '🔖' : chat.type === 'group' ? <Users size={18} /> : chat.type === 'channel' ? <Volume2 size={18} /> : getInitials(chat.name)}
           </div>
           {otherUser?.isOnline && !isBot && chat.type === 'private' && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-tg-online rounded-full border-2 border-tg-header" />}
         </div>
-        <div className="text-left">
-          <div className="text-sm font-medium text-tg-text flex items-center gap-1">{chat.name}{isBot && <span className="text-tg-accent text-xs">🤖</span>}</div>
-          <div className={`text-xs ${otherUser?.isOnline ? 'text-tg-accent' : 'text-tg-text-secondary'}`}>{getStatusText()}</div>
+        <div className="text-left min-w-0">
+          <div className="text-sm font-medium text-tg-text flex items-center gap-1 truncate">{chat.name}{isBot && <span className="text-tg-accent text-xs">🤖</span>}</div>
+          <div className={`text-xs truncate ${otherUser?.isOnline ? 'text-tg-accent' : 'text-tg-text-secondary'}`}>{getStatusText()}</div>
         </div>
       </button>
 
-      <div className="flex-1" />
+      <div className="flex-1 min-w-2" />
 
       {searchMode ? (
         <div className="flex items-center gap-2">
@@ -59,15 +59,15 @@ export function ChatHeader({ chat }: { chat: Chat }) {
         </div>
       ) : (
         <>
-          <button onClick={() => setSearchMode(true)} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Search size={20} className="text-tg-text-secondary" /></button>
+          <button onClick={() => setSearchMode(true)} className="shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Search size={20} className="text-tg-text-secondary" /></button>
           {/* Feature 11: Calendar */}
-          {chat.type === 'channel' && <button onClick={() => dispatch({ type: 'TOGGLE_CALENDAR_VIEWER' })} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Calendar size={20} className="text-tg-text-secondary" /></button>}
+          {chat.type === 'channel' && <button onClick={() => dispatch({ type: 'TOGGLE_CALENDAR_VIEWER' })} className="hidden sm:block shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Calendar size={20} className="text-tg-text-secondary" /></button>}
           {chat.type === 'private' && <>
-            <button onClick={() => dispatch({ type: 'START_CALL', chatId: chat.id, callType: 'voice' })} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Phone size={20} className="text-tg-text-secondary" /></button>
-            <button onClick={() => dispatch({ type: 'START_CALL', chatId: chat.id, callType: 'video' })} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Video size={20} className="text-tg-text-secondary" /></button>
+            <button onClick={() => dispatch({ type: 'START_CALL', chatId: chat.id, callType: 'voice' })} className="shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Phone size={20} className="text-tg-text-secondary" /></button>
+            <button onClick={() => dispatch({ type: 'START_CALL', chatId: chat.id, callType: 'video' })} className="hidden sm:block shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Video size={20} className="text-tg-text-secondary" /></button>
           </>}
           {/* Group live voice chat */}
-          {chat.type === 'group' && <button onClick={() => dispatch({ type: 'START_VOICE_CHAT', chatId: chat.id })} title="Start Voice Chat" className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Volume2 size={20} className="text-tg-text-secondary" /></button>}
+          {chat.type === 'group' && <button onClick={() => dispatch({ type: 'START_VOICE_CHAT', chatId: chat.id })} title="Start Voice Chat" className="shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Volume2 size={20} className="text-tg-text-secondary" /></button>}
           {/* Private channel: apply to join */}
           {chat.type === 'channel' && !isMember && (
             (chat.pendingJoinRequests || []).includes('user_me')
@@ -78,9 +78,9 @@ export function ChatHeader({ chat }: { chat: Chat }) {
       )}
 
       {/* Feature 8: Bookmarks button */}
-      <button onClick={() => dispatch({ type: 'TOGGLE_BOOKMARKS_VIEW' })} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Bookmark size={20} className="text-tg-text-secondary" /></button>
+      <button onClick={() => dispatch({ type: 'TOGGLE_BOOKMARKS_VIEW' })} className="hidden sm:block shrink-0 p-2 rounded-full hover:bg-tg-hover transition-colors"><Bookmark size={20} className="text-tg-text-secondary" /></button>
 
-      <div className="relative">
+      <div className="relative shrink-0">
         <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><MoreVertical size={20} className="text-tg-text-secondary" /></button>
         {showMenu && <>
           <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />

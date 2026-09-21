@@ -4,8 +4,13 @@ import { peerIdFor, userIdFromPeerId, shortId } from '../utils/identity';
 export type CloudStatus = 'off' | 'connecting' | 'online' | 'error';
 export type PeerState = 'online' | 'offline' | 'connecting';
 
+/**
+ * Everything two people can send each other. A real message travels as its own
+ * fields (`payload`), so photos, voice notes, locations, polls and gifts all
+ * arrive exactly as they were written — not just the plain text ones.
+ */
 export interface OutgoingEnvelope {
-  kind: 'text' | 'typing' | 'read' | 'profile' | 'react' | 'media' | 'ping' | 'pong';
+  kind: 'message' | 'edit' | 'delete' | 'typing' | 'read' | 'profile' | 'react' | 'ping' | 'pong';
   id?: string;
   text?: string;
   timestamp?: number;
@@ -15,7 +20,8 @@ export interface OutgoingEnvelope {
   messageIds?: string[];
   isTyping?: boolean;
   emoji?: string;
-  media?: { type: string; url: string; name: string; size?: number };
+  /** The message being delivered, minus the fields the receiving side owns. */
+  payload?: Record<string, unknown>;
 }
 
 export type NetEvent =

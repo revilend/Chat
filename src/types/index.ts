@@ -63,6 +63,8 @@ export interface Message {
   postedAsGroup?: boolean;
   linkPreview?: LinkPreview;
   sendWhenOnline?: boolean;
+  /** True while this device is still trying to hand the message to the other person. */
+  deliveryPending?: boolean;
   priceStars?: number;
   paidBy?: string[];
   splitBill?: SplitBill;

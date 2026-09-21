@@ -14,7 +14,7 @@ const wallpapers = ['#0e1621', '#1a1a2e', '#16213e', '#0f3460', '#1b1b2f', '#2d1
 interface Props { chat: Chat; }
 
 export function MessageInput({ chat }: Props) {
-  const { state, dispatch, t, sendMessage, notifyTyping } = useApp();
+  const { state, dispatch, t, sendMessage, notifyTyping, deliver, deliverEdit } = useApp();
   const [text, setText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
@@ -70,7 +70,7 @@ export function MessageInput({ chat }: Props) {
     const trimmed = text.trim();
     if (!trimmed) return;
     if (linksBlocked) { setRecordError('🔗 Links are turned off for members in this group'); return; }
-    if (state.editingMessageId) { dispatch({ type: 'EDIT_MESSAGE', messageId: state.editingMessageId, newText: trimmed }); setText(''); return; }
+    if (state.editingMessageId) { dispatch({ type: 'EDIT_MESSAGE', messageId: state.editingMessageId, newText: trimmed }); deliverEdit(state.editingMessageId, trimmed); setText(''); return; }
     if (showScheduled && scheduledDate && scheduledTime) {
       const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`).getTime();
       dispatch({ type: 'SEND_MESSAGE', message: { id: `msg_sch_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: trimmed, timestamp: scheduledAt, scheduledAt, type: 'text', readBy: ['user_me'] } });
@@ -164,14 +164,11 @@ export function MessageInput({ chat }: Props) {
       const processed = needsProcessing
         ? await processVoiceClip(clip.url, { effect: voiceEffect, start: trim.start, end: trim.end })
         : { dataUrl: clip.url, duration: clip.duration, waveform: clip.waveform };
-      dispatch({
-        type: 'SEND_MESSAGE',
-        message: {
-          id: `msg_voice_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '',
-          timestamp: Date.now(), type: 'voice', readBy: ['user_me'],
-          audioUrl: processed.dataUrl, audioDuration: processed.duration, audioWaveform: processed.waveform,
-          voiceEffect,
-        },
+      deliver({
+        id: `msg_voice_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '',
+        timestamp: Date.now(), type: 'voice', readBy: ['user_me'],
+        audioUrl: processed.dataUrl, audioDuration: processed.duration, audioWaveform: processed.waveform,
+        voiceEffect,
       });
       setClip(null);
       setVoiceEffect('normal');
@@ -202,12 +199,9 @@ export function MessageInput({ chat }: Props) {
     try {
       const blob = await capture.stop();
       const url = await blobToDataUrl(blob);
-      dispatch({
-        type: 'SEND_MESSAGE',
-        message: {
-          id: `msg_vnote_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '',
-          timestamp: Date.now(), type: 'video', videoNote: true, videoUrl: url, readBy: ['user_me'],
-        },
+      deliver({
+        id: `msg_vnote_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '',
+        timestamp: Date.now(), type: 'video', videoNote: true, videoUrl: url, readBy: ['user_me'],
       });
       setVideoNote({ active: false, url: null });
       setShowAttach(false);
@@ -313,8 +307,8 @@ export function MessageInput({ chat }: Props) {
         </motion.div>}
       </AnimatePresence>
 
-      <div className="flex items-end gap-1 px-2 py-2">
-        <div className="relative">
+      <div className="flex items-end gap-1 px-2 py-2 min-w-0">
+        <div className="relative shrink-0">
           <button onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); setShowQuickReplies(false); }} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Smile size={22} className="text-tg-text-secondary" /></button>
           <AnimatePresence>
             {showEmoji && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 p-2 w-[280px] z-50">
@@ -327,7 +321,7 @@ export function MessageInput({ chat }: Props) {
           </AnimatePresence>
         </div>
 
-        <div className="relative">
+        <div className="relative shrink-0">
           <button onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); setShowQuickReplies(false); }} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Paperclip size={22} className="text-tg-text-secondary" /></button>
           <AnimatePresence>
             {showAttach && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 py-1 w-56 z-50">
@@ -341,12 +335,12 @@ export function MessageInput({ chat }: Props) {
                 <FileText size={18} className="text-purple-500" /><span className="text-sm text-tg-text">{t('files')}</span>
                 <input type="file" multiple className="hidden" onChange={handleFileSelect} />
               </label>
-              <button onClick={() => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => dispatch({ type: 'SEND_MESSAGE', message: { id: `msg_loc_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '', timestamp: Date.now(), type: 'location', location: { lat: pos.coords.latitude, lng: pos.coords.longitude }, readBy: ['user_me'] } })); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><MapPin size={18} className="text-green-500" /><span className="text-sm text-tg-text">{t('sendLocation')}</span></button>
+              <button onClick={() => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => deliver({ id: `msg_loc_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '', timestamp: Date.now(), type: 'location', location: { lat: pos.coords.latitude, lng: pos.coords.longitude }, readBy: ['user_me'] }), () => setRecordError('Location unavailable — allow location access and try again')); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><MapPin size={18} className="text-green-500" /><span className="text-sm text-tg-text">{t('sendLocation')}</span></button>
               <button onClick={() => { dispatch({ type: 'TOGGLE_POLL_MODAL' }); setShowAttach(false); }} disabled={!perms.canSendPolls} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left disabled:opacity-40"><BarChart3 size={18} className="text-orange-500" /><span className="text-sm text-tg-text">{t('poll')}</span>{!perms.canSendPolls && <span className="text-[10px] text-tg-red ml-auto">admin only</span>}</button>
               {chat.type === 'group' && <button onClick={() => { dispatch({ type: 'TOGGLE_SPLIT_BILL' }); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><span className="text-lg">💰</span><span className="text-sm text-tg-text">Split Bill</span></button>}
               <div className="border-t border-black/20 my-1" />
               <button onClick={() => { dispatch({ type: 'TOGGLE_REMINDER_MODAL' }); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Bell size={18} className="text-yellow-500" /><span className="text-sm text-tg-text">Set Reminder</span></button>
-              {chat.type === 'private' && <button onClick={() => { const trimmed = text.trim(); if (trimmed) { dispatch({ type: 'SEND_MESSAGE', message: { id: `msg_online_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: trimmed, timestamp: Date.now(), type: 'text', readBy: ['user_me'], sendWhenOnline: true } }); setText(''); } setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Clock size={18} className="text-teal-400" /><span className="text-sm text-tg-text">Send When Online</span></button>}
+              {chat.type === 'private' && <button onClick={() => { const trimmed = text.trim(); if (trimmed) { deliver({ id: `msg_online_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: trimmed, timestamp: Date.now(), type: 'text', readBy: ['user_me'], sendWhenOnline: true }); setText(''); } setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Clock size={18} className="text-teal-400" /><span className="text-sm text-tg-text">Send When Online</span></button>}
               {chat.type === 'channel' && <button onClick={() => { setShowPriceInput(true); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Star size={18} className="text-amber-400" /><span className="text-sm text-tg-text">Paid Post</span></button>}
               {isGroupAdmin && <button onClick={() => { if (text.trim()) { dispatch({ type: 'POST_AS_ANONYMOUS', chatId: chat.id, text: text.trim() }); setText(''); } setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><EyeOff size={18} className="text-cyan-500" /><span className="text-sm text-tg-text">Post Anonymously</span></button>}
               <button onClick={startVideoNote} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Video size={18} className="text-cyan-400" /><span className="text-sm text-tg-text">Video Message</span></button>
@@ -365,7 +359,7 @@ export function MessageInput({ chat }: Props) {
           </AnimatePresence>
         </div>
 
-        <div className="relative">
+        <div className="relative shrink-0">
           <button onClick={() => { setShowQuickReplies(!showQuickReplies); setShowEmoji(false); setShowAttach(false); }} className="p-2 rounded-full hover:bg-tg-hover transition-colors"><Slash size={22} className="text-tg-text-secondary" /></button>
           <AnimatePresence>
             {showQuickReplies && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 py-1 w-56 z-50">
@@ -374,7 +368,7 @@ export function MessageInput({ chat }: Props) {
           </AnimatePresence>
         </div>
 
-        <div className="flex-1 relative">
+        <div className="flex-1 min-w-0 relative">
           <textarea ref={inputRef} value={text} onChange={e => { updateText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }} onKeyDown={handleKeyDown} placeholder={t('send')} rows={1} className="w-full bg-tg-input rounded-xl px-4 py-2.5 text-sm text-tg-text placeholder:text-tg-text-secondary outline-none resize-none max-h-[120px]" />
         </div>
 
