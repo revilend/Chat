@@ -58,7 +58,7 @@ g.AudioContext = class { state = 'running'; currentTime = 0; createOscillator() 
 import { renderToString } from 'react-dom/server';
 import { createElement, Fragment } from 'react';
 import App, { AppInner } from '../src/App';
-import { AppProvider, envelopeFor, messageFromEnvelope, type AppState } from '../src/store/AppContext';
+import { AppProvider, envelopeFor, messageFromEnvelope, loadPreferences, type AppState } from '../src/store/AppContext';
 import type { Message } from '../src/types';
 import { AccountProvider } from '../src/auth/AccountContext';
 import { AuthScreen } from '../src/components/auth/AuthScreen';
@@ -66,13 +66,15 @@ import { ContactsModal } from '../src/components/modals/ContactsModal';
 import { Sidebar } from '../src/components/layout/Sidebar';
 import { ChatArea } from '../src/components/chat/ChatArea';
 import { HamburgerMenu } from '../src/components/layout/HamburgerMenu';
+import { ProfileModal } from '../src/components/modals/ProfileModal';
+import { SettingsModal } from '../src/components/modals/SettingsModal';
 import { WelcomeScreen } from '../src/components/shared/WelcomeScreen';
 
 const ME = '784219';
 const PEER = '310554';
-/** How the app shows an ID: six digits, split for reading. */
-const ME_SHOWN = '784 219';
-const PEER_SHOWN = '310 554';
+/** How the app shows an ID: six digits, grouped for reading. */
+const ME_SHOWN = '784-219';
+const PEER_SHOWN = '310-554';
 
 let failures = 0;
 const strip = (html: string) => html.replace(/<!--[\s\S]*?-->/g, '');
@@ -228,7 +230,8 @@ expect(peerList, 'Bekzod', 'the real contact shows in the chat list');
 const contacts = render('contacts with address book', surface(createElement(ContactsModal), { ...peerState, isContactsOpen: true }));
 expect(contacts, 'My ID', 'contacts screen shows my own ID');
 expect(contacts, ME_SHOWN, 'contacts screen shows the actual six digits');
-expect(contacts, 'Add by ID', 'contacts screen can connect a new person');
+expect(contacts, 'Add a person', 'contacts screen can connect a new person');
+expect(contacts, '461-182 or @murod', 'contacts screen accepts an ID or an @username');
 expect(contacts, 'Bekzod', 'existing contact is listed');
 
 // ═══ 4. Empty workspace must not crash ═══
@@ -277,6 +280,46 @@ const queued = messageFromEnvelope(PEER, envelopeFor(
 if (queued.scheduledAt === undefined && queued.sendWhenOnline === undefined) console.log('✅ a message still waiting is never delivered early');
 else { failures++; console.log('❌ queued fields leaked onto the wire'); }
 
+// ═══ 5b. Edit Profile is a real form, and preferences survive a reload ═══
+const profileUser = {
+  id: ME, name: 'Aziza Karimova', username: 'murod', avatar: '', avatarColor: 'linear-gradient(135deg, #ffcd6a, #ffa85c)',
+  bio: 'A brief bio about me', phone: '+998 90 111 22 33', lastSeen: Date.now(), isOnline: true,
+  canSeeUserId: 'everyone' as const, canSeeLastSeen: 'everyone' as const,
+};
+const profile = render('edit profile', surface(createElement(ProfileModal), { session, currentUser: profileUser }));
+expect(profile, 'Display name', 'the profile editor has a labelled display-name field');
+expect(profile, 'Username', 'the profile editor has a username field');
+expect(profile, 'Bio', 'the profile editor has a bio field');
+expect(profile, 'input-box', 'the fields are real bordered inputs, not plain text');
+expect(profile, 'A brief bio about me', 'the current bio is loaded into the field');
+expect(profile, '784-219', 'the profile shows the clean six-digit ID');
+expect(profile, 'Upload a photo', 'the avatar camera lets you upload a real photo');
+expect(profile, 'Save', 'there is a save action in the header');
+expect(profile, 'Use my initials instead', 'the avatar can be reset to initials');
+
+// Settings must be functional: every section has a title and the toggles render.
+const settings = render('settings', surface(createElement(SettingsModal), { session, currentUser: profileUser, theme: 'night' }));
+expect(settings, 'Notifications', 'settings offers a working notifications switch');
+expect(settings, 'Night (AMOLED)', 'the theme row reflects the active theme');
+expect(settings, 'Language', 'the language row is offered');
+expect(settings, 'Privacy', 'the privacy row is offered');
+expect(settings, 'Sound and vibration on', 'the switch shows its live state');
+
+// Preferences are read back on the next launch.
+const prefStore = new Map<string, string>();
+const realGet = g.localStorage.getItem;
+const realSet = g.localStorage.setItem;
+g.localStorage.getItem = (k: string) => prefStore.get(k) ?? null;
+g.localStorage.setItem = (k: string, v: string) => { prefStore.set(k, v); };
+prefStore.set('teleflow.preferences', JSON.stringify({ theme: 'night', language: 'uz', notifications: false }));
+const prefs = loadPreferences();
+if (prefs.theme === 'night' && prefs.language === 'uz' && prefs.notifications === false) {
+  console.log('✅ theme, language and notifications are remembered across reloads');
+} else { failures++; console.log(`❌ preferences were not restored (${JSON.stringify(prefs)})`); }
+prefs.notifications = true;
+g.localStorage.getItem = realGet;
+g.localStorage.setItem = realSet;
+
 // ═══ 6. A ringing call is a real incoming call, with accept and decline ═══
 const ringing = render('incoming call', surface(createElement(AppInner), {
   ...peerState,
@@ -314,8 +357,21 @@ desktopViewport = false;
 const phoneHome = render('phone → chat list fills the screen', surface(createElement(AppInner), { ...peerState, activeChatId: null, chats: [] }));
 checkPane('phone shows the chat list when no chat is open', phoneHome, 'list-pane', true);
 checkPane('phone hides the welcome pane (no squeezed panel)', phoneHome, 'chat-pane', false);
-expect(phoneHome, 'Copy my ID', 'the phone home still offers the ID to share');
-expect(phoneHome, 'Add contact', 'the phone home offers adding a person');
+expect(phoneHome, 'Add contact', 'the phone list offers adding a person right away');
+if (phoneHome.includes('Start a real conversation')) { failures++; console.log('❌ the giant address banner is still in the chat list'); }
+else console.log('✅ no giant banner above the chat list');
+
+// Nobody may ever see the old long address — not even a leftover contact from
+// before the ID change.
+const legacyPeer = 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6';
+const legacyList = render('chat list with a legacy address', surface(createElement(Sidebar), {
+  ...peerState,
+  activeChatId: null,
+  chats: [{ id: `chat_peer_${legacyPeer}`, type: 'private', name: legacyPeer, avatar: '', members: ['user_me', legacyPeer], admins: [], unreadCount: 0, isPinned: false, isArchived: false, isMuted: false }],
+  users: { user_me: peerState.currentUser! },
+}));
+if (legacyList.includes(legacyPeer)) { failures++; console.log('❌ a raw 32-character address is still displayed'); }
+else console.log('✅ no raw 32-character address is displayed');
 
 // Open chat on a phone: the chat replaces the list.
 const phoneChat = render('phone → open chat replaces the list', surface(createElement(AppInner), peerState));

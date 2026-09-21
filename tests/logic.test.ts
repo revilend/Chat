@@ -35,11 +35,12 @@ check('a different username is a different identity', deviceA !== otherUser);
 check('the ID is exactly six digits', /^\d{6}$/.test(deviceA), deviceA);
 check('the ID is a valid address', isValidUserId(deviceA), deviceA);
 check('username is normalised (@Aziza vs aziza)', (await deriveAccountId('@Aziza ', 'secret123')) === deviceA);
-check('ID spaces are added for reading', /^\d{3} \d{3}$/.test(formatUserId(deviceA)), formatUserId(deviceA));
+check('the ID reads as 461-182', /^\d{3}-\d{3}$/.test(formatUserId(deviceA)), formatUserId(deviceA));
 
 // ── 2. What a person may paste is understood ─────────────────────────────────
 check('a bare six-digit ID is accepted', normalizeUserId('784219') === '784219');
 check('an ID with spaces is accepted', normalizeUserId('784 219') === '784219');
+check('an ID written as 461-182 is accepted', normalizeUserId('461-182') === '461182');
 check('an @-prefixed ID is accepted', normalizeUserId('@784219') === '784219');
 check('the internal peer prefix is accepted', normalizeUserId('teleflow-784219') === '784219');
 check('a five-digit number is not an ID', !isValidUserId('12345'));

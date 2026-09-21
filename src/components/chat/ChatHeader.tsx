@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useApp } from '../../store/AppContext';
 import type { Chat } from '../../types';
 import { ArrowLeft, Search, Phone, Video, MoreVertical, Users, Volume2, Pin, PinOff, VolumeX, Volume2Icon, Archive, Trash2, Bookmark, Trophy, UserPlus, Calendar, Printer } from 'lucide-react';
-import { getInitials, getAvatarColor } from '../layout/ChatListItem';
+import { UserAvatar } from '../shared/UserAvatar';
+import { displayNameFor } from '../../utils/identity';
 import { SearchNavigator, usePrintChat } from '../features/AdvancedFeatures';
 import { BoostModal } from '../modals/FeatureModals';
 
@@ -35,16 +36,23 @@ export function ChatHeader({ chat }: { chat: Chat }) {
       <button onClick={() => dispatch({ type: 'SET_ACTIVE_CHAT', chatId: null })} className="icon-btn md:hidden" title="Back"><ArrowLeft size={20} /></button>
       <button onClick={() => dispatch({ type: 'TOGGLE_PROFILE' })} className="flex items-center gap-2.5 px-1.5 py-1 hover:bg-tg-hover rounded-xl transition-colors min-w-0">
         <div className="relative shrink-0">
-          <div
-            style={{ background: chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : getAvatarColor(chat.name || chat.id) }}
-            className="avatar-sheen w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+          <UserAvatar
+            name={otherUser?.name || chat.name}
+            id={otherUser?.id || chat.id}
+            avatar={otherUser?.avatar}
+            avatarColor={chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : otherUser?.avatarColor}
+            size={40}
+            className="text-sm"
           >
-            {chat.type === 'saved' ? '🔖' : chat.type === 'group' ? <Users size={18} /> : chat.type === 'channel' ? <Volume2 size={18} /> : getInitials(chat.name)}
-          </div>
+            {chat.type === 'saved' ? '🔖'
+              : chat.type === 'group' ? <Users size={18} />
+                : chat.type === 'channel' ? <Volume2 size={18} />
+                  : undefined}
+          </UserAvatar>
           {otherUser?.isOnline && !isBot && chat.type === 'private' && <div className="online-dot absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full" />}
         </div>
         <div className="text-left min-w-0">
-          <div className="text-[15px] font-semibold text-tg-text flex items-center gap-1 truncate">{chat.name}{isBot && <span className="text-tg-accent text-xs">🤖</span>}</div>
+          <div className="text-[15px] font-semibold text-tg-text flex items-center gap-1 truncate">{displayNameFor(chat.name, otherUserId)}{isBot && <span className="text-tg-accent text-xs">🤖</span>}</div>
           <div className={`text-[13px] truncate ${otherUser?.isOnline ? 'text-tg-online' : chat.isTyping ? 'text-tg-accent' : 'text-tg-text-secondary'}`}>{getStatusText()}</div>
         </div>
       </button>

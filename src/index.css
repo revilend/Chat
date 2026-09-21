@@ -1,5 +1,38 @@
 @import "tailwindcss";
 
+/* ── Theme surfaces ──────────────────────────────────────────────────────────
+   Plain CSS variables (not Tailwind tokens) because the component classes below
+   and the `data-theme` switch both read them. `night` is the AMOLED variant. */
+:root {
+  --surface-glass: rgba(23, 33, 43, 0.82);
+  --surface-pill: rgba(36, 47, 61, 0.92);
+  --surface-card: rgba(30, 42, 55, 0.92);
+  --surface-solid-glass: #17212b;
+  --surface-solid-pill: #242f3d;
+  --surface-solid-card: #1e2a37;
+  --bubble-in-from: #1b2937;
+  --bubble-in-to: #182533;
+  --wallpaper-top: #17242f;
+  --wallpaper-base: #0e1621;
+  --scrim: rgba(14, 22, 33, 0.86);
+  --hairline: #101921;
+}
+
+:root[data-theme='night'] {
+  --surface-glass: rgba(10, 14, 20, 0.86);
+  --surface-pill: rgba(20, 27, 36, 0.94);
+  --surface-card: rgba(17, 24, 32, 0.94);
+  --surface-solid-glass: #0b0f14;
+  --surface-solid-pill: #141b24;
+  --surface-solid-card: #111820;
+  --bubble-in-from: #121a23;
+  --bubble-in-to: #0f161e;
+  --wallpaper-top: #0c141c;
+  --wallpaper-base: #05080c;
+  --scrim: rgba(5, 8, 12, 0.9);
+  --hairline: #05080c;
+}
+
 @theme {
   /* Surfaces, from the chat wallpaper outwards */
   --color-tg-bg: #0e1621;
@@ -151,7 +184,7 @@
 
   /* Every modal, menu and popover: a frosted pane over whatever is behind it. */
   .card {
-    background: rgba(30, 42, 55, 0.92);
+    background: var(--surface-card);
     -webkit-backdrop-filter: blur(18px) saturate(150%);
     backdrop-filter: blur(18px) saturate(150%);
     border: 1px solid rgba(255, 255, 255, 0.07);
@@ -162,6 +195,33 @@
   /* The chat list picks up a faint brand glow at the top instead of flat slab grey. */
   .sidebar-surface {
     background-image: linear-gradient(180deg, rgba(51, 144, 236, 0.07) 0%, rgba(0, 0, 0, 0) 200px);
+  }
+
+  /* Labelled form field used across the profile and settings screens. */
+  .input-box {
+    width: 100%;
+    background: var(--color-tg-input);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 15px;
+    color: var(--color-tg-text);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .input-box::placeholder { color: var(--color-tg-text-secondary); }
+  .input-box:focus {
+    border-color: color-mix(in srgb, var(--color-tg-accent) 65%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-tg-accent) 18%, transparent);
+  }
+  .field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-tg-text-secondary);
+    margin-bottom: 6px;
   }
 
   .field {
@@ -196,7 +256,7 @@
   }
 
   .bubble-in {
-    background: linear-gradient(180deg, #1b2937 0%, #182533 100%);
+    background: linear-gradient(180deg, var(--bubble-in-from) 0%, var(--bubble-in-to) 100%);
     color: var(--color-tg-text);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
@@ -210,12 +270,12 @@
   /* ── Translucent chrome ─────────────────────────────────────────────────────
      The header and the composer float over the chat wallpaper. */
   .glass-bar {
-    background: rgba(23, 33, 43, 0.82);
+    background: var(--surface-glass);
     -webkit-backdrop-filter: blur(14px) saturate(150%);
     backdrop-filter: blur(14px) saturate(150%);
   }
-  .glass-header { border-bottom: 1px solid #101921; }
-  .glass-composer { border-top: 1px solid rgba(16, 25, 33, 0.85); }
+  .glass-header { border-bottom: 1px solid var(--hairline); }
+  .glass-composer { border-top: 1px solid var(--hairline); }
 
   /* ── The floating composer ──────────────────────────────────────────────────
      A capsule that hovers above the bottom edge instead of being glued to it. */
@@ -225,7 +285,7 @@
     gap: 4px;
     padding: 5px;
     border-radius: 999px;
-    background: rgba(36, 47, 61, 0.92);
+    background: var(--surface-pill);
     border: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     -webkit-backdrop-filter: blur(12px);
@@ -252,7 +312,7 @@
 
   /* Fades the wallpaper out behind the floating composer. */
   .scrim-bottom {
-    background: linear-gradient(to top, rgba(14, 22, 33, 0.86), rgba(14, 22, 33, 0));
+    background: linear-gradient(to top, var(--scrim), transparent);
   }
 
   /* A raised row, used for chat lists, contact lists and menu entries. */
@@ -312,16 +372,16 @@
 .tg-doodle {
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.06' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M28 22c2.6-3.4 6.8-2.6 7.8.8.9 3.1-2.6 5.6-7.8 10.2-5.2-4.6-8.7-7.1-7.8-10.2 1-3.4 5.2-4.2 7.8-.8z'/%3E%3Cpath d='M96 18l3.1 6.4 7 1-5 5 1.2 7-6.3-3.3-6.3 3.3 1.2-7-5-5 7-1z'/%3E%3Ccircle cx='124' cy='62' r='9'/%3E%3Cpath d='M62 60l18-8-5 21-4-8z'/%3E%3Cpath d='M30 96c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7z'/%3E%3Cpath d='M96 104v16M88 112h16'/%3E%3Cpath d='M12 130c5-5 11-5 16 0M74 134c5-5 11-5 16 0'/%3E%3Cpath d='M52 40l2 4 4 2-4 2-2 4-2-4-4-2 4-2z'/%3E%3Cpath d='M118 118c3-3 6-3 9 0'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(130% 100% at 50% 0%, #17242f 0%, #0e1621 62%);
+    radial-gradient(130% 100% at 50% 0%, var(--wallpaper-top) 0%, var(--wallpaper-base) 62%);
   background-size: 140px 140px, cover;
   background-repeat: repeat, no-repeat;
 }
 
 /* Without backdrop-filter the glass would be unreadable — fall back to solid. */
 @supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
-  .glass-bar { background: #17212b; }
-  .composer-pill { background: #242f3d; }
-  .card { background: #1e2a37; }
+  .glass-bar { background: var(--surface-solid-glass); }
+  .composer-pill { background: var(--surface-solid-pill); }
+  .card { background: var(--surface-solid-card); }
 }
 
 @keyframes bubble-in {

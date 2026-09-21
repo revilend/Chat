@@ -58,13 +58,33 @@ export async function safetyNumber(userA: string, userB: string): Promise<string
   return (hash.slice(0, 16).match(/.{4}/g) ?? []).join(' ');
 }
 
-/** The ID as it is shown to the user. */
+/**
+ * The ID as it is shown to the user — six digits, nothing else.
+ * An address left over from the older 32-character version is never printed raw.
+ */
 export function shortId(userId: string): string {
-  return normalizeUserId(userId);
+  const id = normalizeUserId(userId);
+  return /^\d{6}$/.test(id) ? id : 'unknown';
 }
 
-/** Display form used in headings: "784 219". */
+/** True for an address from the older 32-character version. */
+export function isLegacyAddress(value: string): boolean {
+  return /^[0-9a-f]{32}$/i.test(value.trim());
+}
+
+/**
+ * A name that is always safe to show: a leftover long address is replaced by the
+ * person's ID (or a plain "Unknown contact") so no raw hash ever reaches the UI.
+ */
+export function displayNameFor(name: string | undefined, fallbackId = ''): string {
+  const value = (name ?? '').trim();
+  if (value && !isLegacyAddress(value)) return value;
+  const id = normalizeUserId(fallbackId);
+  return /^\d{6}$/.test(id) ? `ID ${formatUserId(id)}` : 'Unknown contact';
+}
+
+/** Display form used everywhere: `461-182`. */
 export function formatUserId(userId: string): string {
   const id = normalizeUserId(userId);
-  return id.length === 6 ? `${id.slice(0, 3)} ${id.slice(3)}` : id;
+  return id.length === 6 ? `${id.slice(0, 3)}-${id.slice(3)}` : id;
 }

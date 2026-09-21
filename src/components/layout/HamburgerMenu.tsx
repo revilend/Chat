@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../../store/AppContext';
 import { useAccount } from '../../auth/AccountContext';
 import { Settings, Moon, Sun, Users, Volume2, Phone, Bookmark, Archive, UserPlus, LogOut, IdCard, Check, Copy } from 'lucide-react';
-import { getAvatarColor, getInitials } from './ChatListItem';
+import { UserAvatar } from '../shared/UserAvatar';
 import { formatUserId } from '../../utils/identity';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InstallAppButton } from '../shared/InstallButton';
@@ -61,12 +61,15 @@ export function HamburgerMenu({ onClose }: Props) {
               onClick={() => { dispatch({ type: 'TOGGLE_PROFILE' }); onClose(); }}
               className="row"
             >
-              <div style={{ background: getAvatarColor(state.currentUser.id || 'me') }} className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-base shadow-sm shrink-0">
-                {getInitials(state.currentUser.name || '?')}
-              </div>
+              <UserAvatar
+                name={state.currentUser.name}
+                id={state.currentUser.id || 'me'}
+                avatar={state.currentUser.avatar}
+                avatarColor={state.currentUser.avatarColor}
+                size={48}
+              />
               <div className="text-left min-w-0 flex-1">
-                <div className="text-[15px] font-medium text-tg-text truncate">{state.currentUser.name}</div>
-                <div className="text-[13px] text-tg-text-secondary truncate">@{state.currentUser.username}</div>
+                <div className="text-[15px] font-medium text-tg-text truncate">{state.currentUser.name}</div>                  <div className="text-[13px] text-tg-text-secondary truncate">@{state.currentUser.username} · ID {formatUserId(state.currentUser.id)}</div>
               </div>
             </button>
           </div>

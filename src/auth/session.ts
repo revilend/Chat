@@ -10,7 +10,13 @@ export interface Session {
 
 interface AccountRecord {
   userId: string;
+  /** The handle shown to people right now (it can be changed in the profile). */
   username: string;
+  /**
+   * The handle the account ID was derived from. Kept so the password can still be
+   * checked after a rename: the ID is a hash of this handle plus the password.
+   */
+  credentialUsername?: string;
   name: string;
   createdAt: number;
 }
@@ -79,38 +85,78 @@ export async function authenticate(
   if (!/^[a-z0-9_]+$/.test(handle)) throw new Error('Username can only use letters, numbers and _');
   if (password.length < 6) throw new Error('Password must be at least 6 characters.');
 
-  const userId = await deriveAccountId(handle, password);
   const accounts = readAccounts();
-  const registered = accounts.find(a => a.username === handle);
+  const userId = await deriveAccountId(handle, password);
 
-  // A username already used here with another password is a typo or a different
-  // person — either way it must not silently open a different account.
-  if (registered && registered.userId !== userId) {
-    throw new Error(mode === 'signin'
-      ? 'That password does not match this username.'
-      : 'That username is already used here with a different password.');
+  // An account is found by its current handle *or* by the handle its ID was
+  // originally derived from, so renaming a handle never locks anyone out.
+  const registered = accounts.find(a => a.username === handle || a.credentialUsername === handle);
+
+  if (registered) {
+    const seed = registered.credentialUsername ?? registered.username;
+    const expected = await deriveAccountId(seed, password);
+    if (expected !== registered.userId) {
+      throw new Error(mode === 'signin'
+        ? 'That password does not match this username.'
+        : 'That username is already used here with a different password.');
+    }
+    const session: Session = {
+      userId: registered.userId,
+      username: registered.username,
+      name: (displayName.trim() || registered.name).slice(0, 40),
+      createdAt: registered.createdAt,
+    };
+    if (displayName.trim() && displayName.trim() !== registered.name) {
+      writeAccounts(accounts.map(a => (a.userId === registered.userId ? { ...a, name: session.name } : a)));
+    }
+    saveSession(session);
+    return session;
   }
 
-  // Signing in with no local record is allowed on purpose: the address is derived
-  // from the credentials, so the same username and password open the same account
-  // on a new device, after clearing the browser, or in a private window. The
-  // password still has to be the original one — a wrong one derives a different
-  // address, which is exactly what keeps accounts apart.
-
-  const name = (displayName.trim() || registered?.name || handle).slice(0, 40);
+  // Signing in with no local record is allowed on purpose: the ID is derived from
+  // the credentials, so the same username and password open the same account on a
+  // new device, after clearing the browser, or in a private window. The password
+  // still has to be the original one — a wrong one derives a different ID, which
+  // is exactly what keeps accounts apart.
+  const name = (displayName.trim() || handle).slice(0, 40);
   const session: Session = {
     userId,
     username: handle,
     name,
-    createdAt: registered?.createdAt ?? Date.now(),
+    createdAt: Date.now(),
   };
-
-  const next = registered
-    ? accounts.map(a => (a.username === handle ? { ...a, name } : a))
-    : [...accounts, { userId, username: handle, name, createdAt: session.createdAt }];
-  writeAccounts(next);
+  writeAccounts([...accounts, { userId, username: handle, credentialUsername: handle, name, createdAt: session.createdAt }]);
   saveSession(session);
   return session;
+}
+
+/**
+ * Saves a profile change (display name, handle, avatar…) so it survives a reload
+ * and the next sign-in. The account ID never changes.
+ */
+export function updateAccountProfile(patch: { name?: string; username?: string }): Session | null {
+  const session = loadSession();
+  if (!session) return null;
+  const handle = patch.username ? normalizeUsername(patch.username) : undefined;
+  if (handle !== undefined) {
+    if (handle.length < 3) throw new Error('Username must be at least 3 characters.');
+    if (!/^[a-z0-9_]+$/.test(handle)) throw new Error('Username can only use letters, numbers and _');
+  }
+  const next: Session = {
+    ...session,
+    name: patch.name?.trim() ? patch.name.trim().slice(0, 40) : session.name,
+    username: handle ?? session.username,
+  };
+  const accounts = readAccounts().map(a => (a.userId === session.userId
+    ? { ...a, name: next.name, username: next.username }
+    : a));
+  // A handle that belongs to somebody else on this device must not be stolen.
+  if (accounts.some(a => a.userId !== session.userId && a.username === next.username)) {
+    throw new Error('That username is already used on this device.');
+  }
+  writeAccounts(accounts);
+  saveSession(next);
+  return next;
 }
 
 /**

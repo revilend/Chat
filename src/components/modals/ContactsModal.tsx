@@ -3,9 +3,9 @@ import { useApp } from '../../store/AppContext';
 import { useAccount } from '../../auth/AccountContext';
 import { X, Search, UserPlus, MessageSquare, Copy, Check, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getInitials, getAvatarColor } from '../layout/ChatListItem';
 import { ContactNoteEditor } from '../features/AdvancedFeatures';
 import { formatUserId, isValidUserId, normalizeUserId } from '../../utils/identity';
+import { UserAvatar } from '../shared/UserAvatar';
 
 export function ContactsModal() {
   const { state, dispatch, getUser, t } = useApp();
@@ -44,12 +44,14 @@ export function ContactsModal() {
   };
 
   const connect = async () => {
-    const value = normalizeUserId(address);
-    if (!isValidUserId(value)) {
-      setStatus({ kind: 'error', text: 'That is not a valid ID. Ask your friend for their 6-digit Teleflow ID.' });
+    const typed = address.trim();
+    const isHandle = typed.startsWith('@') || /[a-z_]/i.test(typed);
+    const value = isHandle ? typed : normalizeUserId(typed);
+    if (isHandle ? value.length < 2 : !isValidUserId(value)) {
+      setStatus({ kind: 'error', text: 'Type a 6-digit ID (461-182) or an @username.' });
       return;
     }
-    setStatus({ kind: 'busy', text: 'Connecting to that ID…' });
+    setStatus({ kind: 'busy', text: 'Connecting…' });
     try {
       const online = await addPeer(value);
       setAddress('');
@@ -125,9 +127,7 @@ export function ContactsModal() {
             return (
               <div key={userId} className="flex items-center gap-3 px-3 py-2 hover:bg-tg-hover transition-colors">
                 <div className="relative">
-                  <div style={{ background: getAvatarColor(user!.name || userId) }} className="avatar-sheen w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {getInitials(user!.name)}
-                  </div>
+                  <UserAvatar name={user!.name} id={userId} avatar={user!.avatar} avatarColor={user!.avatarColor} size={44} />
                   {online && <span className="online-dot absolute bottom-0 right-0 w-3 h-3 rounded-full" />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -160,9 +160,9 @@ export function ContactsModal() {
             </div>
           )}
 
-          {/* Connect to a real person by their six-digit ID */}
+          {/* Connect to a real person by their ID or @username */}
           <div className="border-t border-black/20 mt-2 pt-3 px-3 pb-4">
-            <div className="text-xs text-tg-text-secondary mb-2 px-1">Add by ID</div>
+            <div className="text-xs text-tg-text-secondary mb-2 px-1">Add a person</div>
             <div className="flex items-center gap-2">
               <input
                 value={address}
@@ -170,7 +170,7 @@ export function ContactsModal() {
                 maxLength={12}
                 onChange={e => { setAddress(e.target.value); setStatus({ kind: 'idle', text: '' }); }}
                 onKeyDown={e => { if (e.key === 'Enter') void connect(); }}
-                placeholder="Your friend's 6-digit ID"
+                placeholder="461-182 or @murod"
                 className="flex-1 bg-tg-input rounded-lg px-3 py-2 text-sm font-mono tracking-widest text-tg-text outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-tg-text-secondary"
               />
               <button

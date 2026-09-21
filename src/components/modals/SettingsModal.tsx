@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../../store/AppContext';
-import { X, ChevronRight, Shield, Globe, Moon, Sun, Lock, MessageSquare, ToggleLeft, ToggleRight, Clock, Trash2, Image, Star, Settings, Megaphone, Ban } from 'lucide-react';
+import { X, ChevronRight, Shield, Globe, Moon, Sun, Lock, MessageSquare, ToggleLeft, ToggleRight, Clock, Trash2, Image, Star, Settings, Megaphone, Ban, BellRing, BellOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Language } from '../../types';
 import { GhostModeToggle, GroupPermissionsPanel, PrintChatButton, WelcomeMessageEditor } from '../features/AdvancedFeatures';
@@ -20,13 +20,25 @@ export function SettingsModal() {
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md h-full md:h-[90vh] md:max-h-[600px] card rounded-none md:rounded-2xl overflow-hidden flex flex-col">
         <div className="flex items-center gap-3 px-4 h-[56px] border-b border-black/20 flex-shrink-0">
           <button onClick={() => section === 'main' ? dispatch({ type: 'TOGGLE_SETTINGS' }) : setSection('main')} className="p-1"><X size={20} className="text-tg-text-secondary" /></button>
-          <h2 className="text-base font-medium text-tg-text">{section === 'main' ? t('settings') : section === 'privacy' ? t('privacy') : section === 'language' ? t('language') : section === 'passcode' ? t('passcode') : section === 'theme' ? t('theme') : section === 'permissions' ? 'Group Permissions' : section === 'announcements' ? 'Announcements' : section === 'moderation' ? 'Auto-Moderation' : t('theme')}</h2>
+          <h2 className="text-base font-medium text-tg-text">{{
+            main: t('settings'), privacy: t('privacy'), language: t('language'), passcode: t('passcode'),
+            theme: t('theme'), permissions: 'Group Permissions', announcements: 'Announcements',
+            moderation: 'Auto-Moderation', autodelete: 'Auto-Delete',
+          }[section]}</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {section === 'main' && <div className="py-2">
             <SettingsItem icon={<Shield size={20} />} label={t('privacy')} onClick={() => setSection('privacy')} />
             <SettingsItem icon={<Globe size={20} />} label={t('language')} subtitle={state.language === 'en' ? 'English' : state.language === 'uz' ? "O'zbekcha" : 'Русский'} onClick={() => setSection('language')} />
-            <SettingsItem icon={state.theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />} label={t('theme')} subtitle={state.theme} onClick={() => setSection('theme')} />
+            <SettingsItem icon={state.theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />} label={t('theme')} subtitle={state.theme === 'night' ? 'Night (AMOLED)' : 'Dark'} onClick={() => setSection('theme')} />
+            {/* A real switch: it flips the UI immediately and remembers the choice. */}
+            <SettingsItem
+              icon={state.notifications ? <BellRing size={20} /> : <BellOff size={20} />}
+              label="Notifications"
+              subtitle={state.notifications ? 'Sound and vibration on' : 'Muted'}
+              toggle={state.notifications}
+              onClick={() => { dispatch({ type: 'SET_NOTIFICATIONS', enabled: !state.notifications }); if (!state.notifications) void requestNotificationPermission(); }}
+            />
             <SettingsItem icon={<Lock size={20} />} label={t('passcode')} subtitle={state.passcode ? 'Enabled' : 'Disabled'} onClick={() => setSection('passcode')} />
             <SettingsItem icon={<MessageSquare size={20} />} label={t('autoResponder')} subtitle={state.awayMode ? t('awayMode') : 'Off'} toggle={state.awayMode} onClick={() => dispatch({ type: 'SET_AWAY_MODE', away: !state.awayMode })} />
             {state.awayMode && <div className="px-4 py-2"><input type="text" value={state.awayMessage} onChange={e => dispatch({ type: 'SET_AWAY_MESSAGE', msg: e.target.value })} className="w-full bg-tg-input rounded-lg px-3 py-2 text-sm text-tg-text outline-none" placeholder={t('awayMessage')} /></div>}
@@ -102,8 +114,9 @@ export function SettingsModal() {
           {section === 'passcode' && <PasscodeSection state={state} dispatch={dispatch} passcode={newPasscode} setPasscode={setNewPasscode} />}
 
           {section === 'theme' && <div className="py-2">
+            <div className="px-4 py-2 text-xs text-tg-text-secondary">The theme changes as soon as you pick one.</div>
             <ThemeOption label="🌙 Dark" isActive={state.theme === 'dark'} onClick={() => dispatch({ type: 'SET_THEME', theme: 'dark' })} bg="#0e1621" />
-            <ThemeOption label="🌃 Night" isActive={state.theme === 'night'} onClick={() => dispatch({ type: 'SET_THEME', theme: 'night' })} bg="#0a0e14" />
+            <ThemeOption label="🌃 Night (AMOLED black)" isActive={state.theme === 'night'} onClick={() => dispatch({ type: 'SET_THEME', theme: 'night' })} bg="#05080c" />
           </div>}
 
           {section === 'autodelete' && <div className="py-2">
@@ -114,6 +127,14 @@ export function SettingsModal() {
       </motion.div>
     </div>
   );
+}
+
+/** Best-effort: the switch works either way, permission is a bonus. */
+async function requestNotificationPermission() {
+  try {
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission === 'default') await Notification.requestPermission();
+  } catch { /* unsupported or denied */ }
 }
 
 function SettingsItem({ icon, label, subtitle, onClick, toggle }: { icon: React.ReactNode; label: string; subtitle?: string; onClick?: () => void; toggle?: boolean }) {

@@ -2,7 +2,10 @@ export interface User {
   id: string;
   name: string;
   username: string;
+  /** A photo data URL, or empty when the avatar is initials over a colour. */
   avatar: string;
+  /** The chosen avatar gradient, when a photo is not used. */
+  avatarColor?: string;
   bio: string;
   phone: string;
   lastSeen: number;

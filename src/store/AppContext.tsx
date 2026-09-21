@@ -41,6 +41,8 @@ export interface AppState {
   nowPlaying: NowPlaying | null;
   /** Image data URL opened in the photo editor */
   photoEditorSource: string | null;
+  /** Notification sound/vibration preference — persisted like the theme. */
+  notifications: boolean;
   // --- Real accounts & real peer-to-peer connection ---
   /** Signed-in account. `null` shows the sign-in screen. */
   session: Session | null;
@@ -72,6 +74,8 @@ type Action =
   | { type: 'INCOMING_CALL'; userId: string; connection: MediaConnection; video: boolean }
   | { type: 'CLEAR_INCOMING_CALL' }
   | { type: 'SET_LANGUAGE'; lang: Language } | { type: 'SET_THEME'; theme: ThemeMode }
+  | { type: 'SET_NOTIFICATIONS'; enabled: boolean }
+  | { type: 'UPDATE_SESSION'; patch: Partial<Session> }
   | { type: 'SET_PASSCODE'; code: string | null } | { type: 'SET_LOCKED'; locked: boolean }
   | { type: 'SET_AWAY_MODE'; away: boolean } | { type: 'SET_AWAY_MESSAGE'; msg: string }
   | { type: 'UPDATE_PROFILE'; user: Partial<User> }
@@ -194,6 +198,7 @@ const initialState: AppState = {
   showArchivedFolder: false,
   nowPlaying: null,
   photoEditorSource: null,
+  notifications: true,
   session: null,
   hydratedFor: null,
   netStatus: 'off',
@@ -202,11 +207,31 @@ const initialState: AppState = {
   incomingCall: null,
 };
 
+/**
+ * Look-and-feel preferences that must survive a reload: the theme, the language
+ * and the notification switch are read back before the first render.
+ */
+export function loadPreferences(): Partial<AppState> {
+  try {
+    const raw = localStorage.getItem('teleflow.preferences');
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as { theme?: ThemeMode; language?: Language; notifications?: boolean };
+    const out: Partial<AppState> = {};
+    if (parsed.theme === 'dark' || parsed.theme === 'night') out.theme = parsed.theme;
+    if (parsed.language === 'en' || parsed.language === 'uz' || parsed.language === 'ru') out.language = parsed.language;
+    if (typeof parsed.notifications === 'boolean') out.notifications = parsed.notifications;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 /** The stored session decides which workspace the app opens with. */
 function buildInitialState(): AppState {
+  const preferences = loadPreferences();
   const session = loadSession();
-  if (!session) return { ...initialState, session: null };
-  return { ...initialState, ...buildAccountWorkspace(session), session };
+  if (!session) return { ...initialState, ...preferences, session: null };
+  return { ...initialState, ...preferences, ...buildAccountWorkspace(session), session };
 }
 
 /**
@@ -288,6 +313,12 @@ function reducer(state: AppState, action: Action): AppState {
     case 'CLEAR_INCOMING_CALL': return { ...state, incomingCall: null };
     case 'SET_LANGUAGE': return { ...state, language: action.lang };
     case 'SET_THEME': return { ...state, theme: action.theme };
+    case 'SET_NOTIFICATIONS': return { ...state, notifications: action.enabled };
+    // Changing the profile must never touch the workspace: only the session is
+    // patched, so the name, handle and avatar update without dropping any chat.
+    case 'UPDATE_SESSION': return state.session
+      ? { ...state, session: { ...state.session, ...action.patch } }
+      : state;
     case 'SET_PASSCODE': return { ...state, passcode: action.code };
     case 'SET_LOCKED': return { ...state, isLocked: action.locked };
     case 'SET_AWAY_MODE': return { ...state, awayMode: action.away };
@@ -541,6 +572,21 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
     return () => { channelRef.current?.close(); };
   }, []);
 
+  // The theme is a real attribute on <html>, so every surface (and the night
+  // palette) switches the moment the toggle is used — and it is remembered.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.dataset.theme = state.theme;
+  }, [state.theme]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('teleflow.preferences', JSON.stringify({
+        theme: state.theme, language: state.language, notifications: state.notifications,
+      }));
+    } catch { /* storage blocked */ }
+  }, [state.theme, state.language, state.notifications]);
+
   const sessionUserId = state.session?.userId ?? null;
   // Every account owns its own workspace, so two people never share a mailbox.
   const workspaceKey = sessionUserId ? `workspace:${sessionUserId}` : null;
@@ -628,11 +674,25 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
           dispatch({ type: 'SET_HYDRATED', userId: sessionUserId });
           return;
         }
+        // The session is the authority for the name, the handle and the ID; the
+        // stored profile supplies the rest (bio, phone, avatar, avatar color).
+        const currentUser: User = {
+          ...stored.currentUser,
+          id: sessionUserId,
+          name: state.session?.name || stored.currentUser.name,
+          username: state.session?.username || stored.currentUser.username,
+        };
+        const me = state.session;
         dispatch({
           type: 'LOAD_STATE',
           state: {
             chats: stored.chats ?? [], messages: stored.messages ?? [],
-            users: { user_me: stored.currentUser, ...Object.fromEntries((stored.users ?? []).map(u => [u.id, u])) },
+            currentUser,
+            users: {
+              user_me: currentUser,
+              ...(me ? { [me.userId]: currentUser } : {}),
+              ...Object.fromEntries((stored.users ?? []).map(u => [u.id, u])),
+            },
             contacts: stored.contacts ?? [], stories: stored.stories ?? [], lastActiveAt: Date.now(),
           },
         });

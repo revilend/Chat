@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../../store/AppContext';
 import { Copy, Check, UserPlus, Bookmark, Sparkles, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { formatUserId } from '../../utils/identity';
+import { UserAvatar } from './UserAvatar';
 
 export function WelcomeScreen() {
   const { state, dispatch } = useApp();
@@ -29,17 +30,18 @@ export function WelcomeScreen() {
     <div className="h-full flex items-center justify-center bg-tg-bg tg-doodle px-6 overflow-y-auto">
       <div className="max-w-md w-full py-10">
         <div className="flex flex-col items-center text-center">
-          <div
-            style={{ background: 'linear-gradient(140deg, #57bcff, #3390ec 55%, #1f7fd6)', boxShadow: '0 16px 40px rgba(51,144,236,0.42), inset 0 1px 0 rgba(255,255,255,0.3)' }}
-            className="w-20 h-20 rounded-3xl flex items-center justify-center"
-          >
-            <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
-              <path d="M27 5L3 14.5l6.5 2.4L22 9.5l-9.4 9.1.6 6.9 4-4.6 5.4 4 4.4-19.9Z" fill="white" />
-            </svg>
-          </div>
+          <UserAvatar
+            name={state.currentUser.name}
+            id={state.currentUser.id || 'me'}
+            avatar={state.currentUser.avatar}
+            avatarColor={state.currentUser.avatarColor}
+            size={84}
+            className="shadow-2xl"
+          />
           <h1 className="mt-5 text-xl font-medium text-tg-text">
             You are signed in as {state.currentUser.name}
           </h1>
+          <div className="text-[13px] text-tg-text-secondary mt-1">@{state.currentUser.username}</div>
           <div className={`mt-2 flex items-center gap-1.5 text-xs ${statusView.className}`}>
             {statusView.icon} {statusView.text}
           </div>

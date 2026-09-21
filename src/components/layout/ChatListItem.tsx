@@ -1,6 +1,8 @@
 import { useApp } from '../../store/AppContext';
 import type { Chat } from '../../types';
 import { Pin, Volume2, Users, VolumeX, Check, CheckCheck, Bookmark } from 'lucide-react';
+import { UserAvatar } from '../shared/UserAvatar';
+import { displayNameFor } from '../../utils/identity';
 
 function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -50,7 +52,9 @@ export function ChatListItem({ chat }: { chat: Chat }) {
   const isOnline = otherUser?.isOnline;
   const isBot = chat.name === 'Helper Bot';
 
-  const displayName = chat.type === 'saved' ? 'Saved Messages' : chat.name;
+  // A leftover 32-character address never reaches the screen as a name.
+  const peerId = chat.members.find(m => m !== 'user_me' && m !== 'user_helper_bot');
+  const displayName = chat.type === 'saved' ? 'Saved Messages' : displayNameFor(chat.name, peerId);
 
   return (
     <button
@@ -65,22 +69,21 @@ export function ChatListItem({ chat }: { chat: Chat }) {
       }`}
       style={isActive ? { background: 'linear-gradient(150deg, #3a9bea 0%, #2b86d6 60%, #2478c4 100%)', boxShadow: '0 8px 22px rgba(36, 129, 204, 0.32)' } : undefined}
     >
-      {/* Avatar */}
+      {/* Avatar — the person's own photo when they have one */}
       <div className="relative flex-shrink-0">
-        <div
-          style={{ background: chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : getAvatarColor(chat.name || chat.id) }}
-          className="avatar-sheen w-[54px] h-[54px] rounded-full flex items-center justify-center text-white font-semibold text-lg"
+        <UserAvatar
+          name={otherUser?.name || displayName}
+          id={otherUser?.id || chat.id}
+          avatar={otherUser?.avatar}
+          avatarColor={chat.type === 'saved' ? 'linear-gradient(135deg, #52b6ff, #3390ec)' : otherUser?.avatarColor}
+          size={54}
+          className={isActive ? 'ring-1 ring-white/25' : ''}
         >
-          {chat.type === 'saved' ? (
-            <Bookmark size={24} fill="white" />
-          ) : chat.type === 'group' ? (
-            <Users size={24} />
-          ) : chat.type === 'channel' ? (
-            <Volume2 size={24} />
-          ) : (
-            getInitials(chat.name)
-          )}
-        </div>
+          {chat.type === 'saved' ? <Bookmark size={24} fill="white" />
+            : chat.type === 'group' ? <Users size={24} />
+              : chat.type === 'channel' ? <Volume2 size={24} />
+                : undefined}
+        </UserAvatar>
         {isOnline && !isBot && (
           <div className="online-dot absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full" />
         )}
