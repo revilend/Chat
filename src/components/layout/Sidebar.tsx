@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../../store/AppContext';
-import { Search, Menu, X, Users, Volume2, Archive, Pencil } from 'lucide-react';
+import { Search, Menu, X, Users, Volume2, Archive, Pencil, Copy, Check, UserPlus } from 'lucide-react';
 import { ChatListItem } from './ChatListItem';
 import { HamburgerMenu } from './HamburgerMenu';
 import type { FolderType } from '../../types';
@@ -17,6 +17,19 @@ export function Sidebar() {
   const { state, dispatch, t } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // A fresh account only has Saved Messages and the local bot. Phones hide the
+  // welcome pane, so the address is offered here until a real chat exists.
+  const onlyPlaceholders = state.chats.every(c => c.type === 'saved' || c.id === 'chat_bot');
+
+  const copyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(state.session?.userId ?? '');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked */ }
+  };
 
   const archivedOpen = state.showArchivedFolder;
 
@@ -118,6 +131,24 @@ export function Sidebar() {
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
+        {onlyPlaceholders && !state.searchQuery && (
+          <div className="md:hidden m-3 rounded-xl bg-tg-accent/10 border border-tg-accent/25 p-3">
+            <div className="text-xs font-medium text-tg-text">Start a real conversation</div>
+            <div className="mt-1.5 font-mono text-[11px] text-tg-text break-all leading-relaxed">{state.session?.userId}</div>
+            <div className="mt-2.5 flex gap-2">
+              <button onClick={copyAddress} className="flex-1 h-9 rounded-lg bg-tg-accent text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-tg-accent-hover transition-colors">
+                {copied ? <Check size={14} /> : <Copy size={14} />}{copied ? 'Copied' : 'Copy my address'}
+              </button>
+              <button onClick={() => dispatch({ type: 'TOGGLE_CONTACTS' })} className="flex-1 h-9 rounded-lg bg-tg-sidebar text-tg-text text-xs font-medium flex items-center justify-center gap-1.5 border border-black/20 hover:bg-tg-hover transition-colors">
+                <UserPlus size={14} />Add contact
+              </button>
+            </div>
+            <p className="mt-2 text-[10px] text-tg-text-secondary leading-relaxed">
+              Send your address to a friend — your messages travel straight between your two devices.
+            </p>
+          </div>
+        )}
+
         {/* Archived chats */}
         {archivedCount > 0 && (
           <button

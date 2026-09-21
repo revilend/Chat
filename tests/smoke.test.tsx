@@ -40,7 +40,16 @@ g.document = g.document ?? {
   documentElement: { style: {}, classList: { add() {}, remove() {} } },
 };
 g.location = { hash: '', href: 'http://localhost/', search: '', pathname: '/' };
-g.matchMedia = () => ({ matches: false, media: '', addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+
+// Controllable viewport: the app asks for the `md` breakpoint to decide whether
+// it may show the chat list and the open chat side by side.
+let desktopViewport = true;
+g.matchMedia = (query: string) => ({
+  matches: desktopViewport && query.includes('768px'),
+  media: query,
+  addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
+});
+(g.window as any).matchMedia = g.matchMedia;
 g.requestAnimationFrame = (cb: any) => setTimeout(() => cb(Date.now()), 16);
 g.cancelAnimationFrame = (id: any) => clearTimeout(id);
 g.Image = class { src = ''; onload: any = null; onerror: any = null; };
@@ -48,7 +57,7 @@ g.AudioContext = class { state = 'running'; currentTime = 0; createOscillator() 
 
 import { renderToString } from 'react-dom/server';
 import { createElement, Fragment } from 'react';
-import App from '../src/App';
+import App, { AppInner } from '../src/App';
 import { AppProvider, type AppState } from '../src/store/AppContext';
 import { AccountProvider } from '../src/auth/AccountContext';
 import { AuthScreen } from '../src/components/auth/AuthScreen';
@@ -162,6 +171,41 @@ render('signed in with an empty workspace', surface(
   createElement(Fragment, null, createElement(Sidebar), createElement(WelcomeScreen)),
   { session, currentUser: peerState.currentUser, users: {}, chats: [], messages: [], contacts: [], activeChatId: null },
 ));
+
+// ═══ 5. Phone layout: one pane at a time, never two squeezed side by side ═══
+// Hiding is done with classes, so the assertion reads the pane's own class list.
+function paneVisible(html: string, testId: string) {
+  const i = html.indexOf(`data-testid="${testId}"`);
+  if (i < 0) return null;
+  const c = html.indexOf('class="', i);
+  if (c < 0) return null;
+  return !html.slice(c + 7, html.indexOf('"', c + 7)).split(/\s+/).includes('hidden');
+}
+function checkPane(label: string, html: string, testId: string, visible: boolean) {
+  const actual = paneVisible(html, testId);
+  if (actual === visible) console.log(`✅ ${label}`);
+  else { failures++; console.log(`❌ ${label} (${testId} visible=${actual ?? 'not rendered'})`); }
+}
+
+// Empty workspace on a phone: the chat list takes the whole width.
+desktopViewport = false;
+const phoneHome = render('phone → chat list fills the screen', surface(createElement(AppInner), { ...peerState, activeChatId: null, chats: [] }));
+checkPane('phone shows the chat list when no chat is open', phoneHome, 'list-pane', true);
+checkPane('phone hides the welcome pane (no squeezed panel)', phoneHome, 'chat-pane', false);
+expect(phoneHome, 'Copy my address', 'the phone home still offers the address to share');
+expect(phoneHome, 'Add contact', 'the phone home offers adding a person');
+
+// Open chat on a phone: the chat replaces the list.
+const phoneChat = render('phone → open chat replaces the list', surface(createElement(AppInner), peerState));
+expect(phoneChat, 'Salom! Welcome to the real client', 'the open chat renders on a phone');
+checkPane('phone hides the chat list while a chat is open', phoneChat, 'list-pane', false);
+checkPane('phone shows the open chat full width', phoneChat, 'chat-pane', true);
+
+// Desktop keeps both panes.
+desktopViewport = true;
+const desktopChat = render('desktop → list and chat side by side', surface(createElement(AppInner), peerState));
+checkPane('desktop shows the chat list', desktopChat, 'list-pane', true);
+checkPane('desktop shows the open chat', desktopChat, 'chat-pane', true);
 
 console.log(failures === 0 ? '\n🎉 all smoke checks passed' : `\n❌ ${failures} smoke check(s) failed`);
 process.exit(failures === 0 ? 0 : 1);

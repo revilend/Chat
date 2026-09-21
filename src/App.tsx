@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AppProvider, useApp } from './store/AppContext';
 import { AccountProvider } from './auth/AccountContext';
 import { AuthScreen } from './components/auth/AuthScreen';
@@ -23,9 +23,36 @@ import { BookmarksDrawer, MediaConfirmModal } from './components/features/Advanc
 import { PhotoEditor } from './components/media/PhotoEditor';
 import { MusicPlayer } from './components/chat/MediaViews';
 
-function AppInner() {
+/** Matches Tailwind's `md` breakpoint so the JS layout and the CSS classes agree. */
+const DESKTOP_QUERY = '(min-width: 768px)';
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() => {
+    // No matchMedia (server render, old embedded browser): assume a wide screen.
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
+    return window.matchMedia(DESKTOP_QUERY).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const onChange = () => setIsDesktop(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  return isDesktop;
+}
+
+export function AppInner() {
   const { state } = useApp();
   const [sidebarWidth, setSidebarWidth] = useState(360);
+  const isDesktop = useIsDesktop();
+
+  // On a phone only one pane fits: the chat list, or the open chat.
+  const showList = isDesktop || !state.activeChatId;
+  const showChat = isDesktop || Boolean(state.activeChatId);
+  const listWidth = isDesktop ? (state.activeChatId ? Math.min(sidebarWidth, 420) : sidebarWidth) : '100%';
 
   const handleResize = useCallback((e: MouseEvent) => { if (e.clientX > 200 && e.clientX < 600) setSidebarWidth(e.clientX); }, []);
   const handleMouseDown = useCallback(() => { document.addEventListener('mousemove', handleResize); document.addEventListener('mouseup', () => document.removeEventListener('mousemove', handleResize), { once: true }); }, [handleResize]);
@@ -36,11 +63,11 @@ function AppInner() {
 
   return (
     <div className="h-full w-full flex bg-tg-bg overflow-hidden">
-      <div className="h-full flex-shrink-0 border-r border-black/20 relative" style={{ width: state.activeChatId ? Math.min(sidebarWidth, 420) : sidebarWidth }}>
-        <div className="h-full flex flex-col"><StoriesStrip /><Sidebar /></div>
-        {state.activeChatId && <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-tg-accent/30 z-10" onMouseDown={handleMouseDown} />}
+      <div data-testid="list-pane" className={`h-full flex-shrink-0 border-r border-black/20 relative ${showList ? 'flex' : 'hidden'} flex-col ${isDesktop ? '' : 'w-full'}`} style={{ width: listWidth }}>
+        <StoriesStrip /><Sidebar />
+        {isDesktop && state.activeChatId && <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-tg-accent/30 z-10" onMouseDown={handleMouseDown} />}
       </div>
-      <div className="flex-1 h-full flex flex-col min-w-0">
+      <div data-testid="chat-pane" className={`flex-1 h-full ${showChat ? 'flex' : 'hidden'} flex-col min-w-0`}>
         {/* Sticky music player keeps playing while browsing other chats */}
         <MusicPlayer />
         <div className="flex-1 min-h-0">{state.activeChatId ? <ChatArea /> : <WelcomeScreen />}</div>
