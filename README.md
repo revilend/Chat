@@ -51,10 +51,10 @@ can be served from the root of a Pages domain and from a project path alike.
 builds and publishes `dist/` to Pages with the official Pages actions. Nothing is committed by hand
 and no build output lives in the repository.
 
-1. Push to `main` — or run the *Deploy to GitHub Pages* workflow manually from the Actions tab.
-2. Open **Settings → Pages** and make sure **Source** is **GitHub Actions**. The workflow tries to
-   enable this itself on its first run; if the run fails on *Configure Pages*, set it by hand and
-   re-run the workflow.
+1. Open **Settings → Pages** once and set **Source** to **GitHub Actions**. This cannot be done by the
+   workflow itself: the automatically provided token is not allowed to create the Pages site.
+2. Push to `main` — or run the *Deploy to GitHub Pages* workflow manually from the Actions tab.
+   Re-run the failed first run after step 1; every later push deploys on its own.
 
 Where the site ends up:
 
