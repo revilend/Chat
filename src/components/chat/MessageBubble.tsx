@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../store/AppContext';
 import type { Message } from '../../types';
-import { Check, CheckCheck, Reply, Forward, Copy, Pin, Trash2, Edit3, Eye, EyeOff, Lock, Bookmark, Printer, Type } from 'lucide-react';
+import { Check, CheckCheck, Reply, Forward, Copy, Pin, Trash2, Edit3, Eye, EyeOff, Lock, Bookmark, Printer, Type, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CodeBlock, ParticleExplosion, TagInput, UnitConverterCard, CaseConverterPopup } from '../features/AdvancedFeatures';
 import { PhotoView, VideoView, VideoNoteView, FileView, VoiceView, MusicView, LinkPreviewCard } from './MediaViews';
@@ -73,6 +73,24 @@ export function MessageBubble({ message, isGrouped, isLast, isSelected }: Props)
   return (
     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isGrouped ? 'mt-0.5' : 'mt-3'} group`} ref={contextRef}>
       <div className={`relative max-w-[85%] sm:max-w-[420px] ${isMe ? 'ml-auto' : 'mr-auto'}`}>
+        {/* Floating quick actions, only where there is room beside the bubble */}
+        <div className={`hidden md:flex absolute top-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity z-20 ${isMe ? 'right-full mr-2' : 'left-full ml-2'}`}>
+          <button
+            onClick={(e) => { dispatch({ type: 'TOGGLE_REACTION', messageId: message.id, emoji: '❤️' }); triggerParticles('❤️', e); }}
+            className="w-8 h-8 rounded-full bg-tg-elevated/90 backdrop-blur shadow-md hover:bg-tg-hover text-sm"
+            title="React with ❤️"
+          >❤️</button>
+          <button
+            onClick={() => dispatch({ type: 'SET_REPLY_TO', messageId: message.id })}
+            className="w-8 h-8 rounded-full bg-tg-elevated/90 backdrop-blur shadow-md hover:bg-tg-hover flex items-center justify-center"
+            title={t('reply')}
+          ><Reply size={15} className="text-tg-text-secondary" /></button>
+          <button
+            onClick={() => setShowContextMenu(true)}
+            className="w-8 h-8 rounded-full bg-tg-elevated/90 backdrop-blur shadow-md hover:bg-tg-hover flex items-center justify-center"
+            title="More"
+          ><MoreHorizontal size={15} className="text-tg-text-secondary" /></button>
+        </div>
         {isSelected && <div className="absolute inset-0 bg-tg-accent/20 rounded-xl z-10 border-2 border-tg-accent" />}
 
         <div className={`relative bubble ${hasOwnText ? 'px-2.5 py-1.5' : 'p-1'} ${isMe ? 'bg-tg-outgoing text-white' : 'bg-tg-incoming text-tg-text'} ${isLast ? (isMe ? 'bubble-tail-out' : 'bubble-tail-in') : ''} ${message.isPinned ? 'ring-1 ring-tg-accent/60' : ''}`}

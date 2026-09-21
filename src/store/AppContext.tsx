@@ -706,6 +706,13 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
     network.send(peer, { kind: 'read', messageIds: ids, userId: sessionUser.userId });
   }, [sessionUser, state.activeChatId, state.messages, state.chats]);
 
+  // The unread count lives in the tab title, so a glance at the browser is enough
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const unread = state.chats.reduce((sum, c) => sum + (c.isArchived ? 0 : c.unreadCount || 0), 0);
+    document.title = unread > 0 ? `(${unread}) Teleflow` : 'Teleflow';
+  }, [state.chats]);
+
   const t = useCallback((key: string): string => {
     const lang = translations[state.language] as Record<string, string>;
     return lang[key] || key;

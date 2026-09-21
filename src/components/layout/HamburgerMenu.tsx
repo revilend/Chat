@@ -51,34 +51,34 @@ export function HamburgerMenu({ onClose }: Props) {
           animate={{ x: 0 }}
           exit={{ x: -300 }}
           transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-          className="w-[280px] h-full bg-tg-sidebar shadow-2xl overflow-y-auto"
+          className="w-[286px] h-full bg-tg-sidebar shadow-2xl overflow-y-auto border-r border-white/5"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Signed-in account */}
-          <div className="p-4 pb-3 border-b border-black/20">
+          <div className="p-3 pb-2.5 border-b border-white/5">
             <button
               onClick={() => { dispatch({ type: 'TOGGLE_PROFILE' }); onClose(); }}
-              className="flex items-center gap-3 w-full hover:bg-tg-hover rounded-lg p-2 transition-colors"
+              className="row"
             >
-              <div style={{ background: getAvatarColor(state.currentUser.id || 'me') }} className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold">
+              <div style={{ background: getAvatarColor(state.currentUser.id || 'me') }} className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-base shadow-sm shrink-0">
                 {getInitials(state.currentUser.name || '?')}
               </div>
-              <div className="text-left min-w-0">
-                <div className="text-sm font-medium text-tg-text truncate">{state.currentUser.name}</div>
-                <div className="text-xs text-tg-text-secondary truncate">@{state.currentUser.username}</div>
+              <div className="text-left min-w-0 flex-1">
+                <div className="text-[15px] font-medium text-tg-text truncate">{state.currentUser.name}</div>
+                <div className="text-[13px] text-tg-text-secondary truncate">@{state.currentUser.username}</div>
               </div>
             </button>
           </div>
 
           {/* Your address — this is what other people add to reach you */}
-          <div className="px-4 py-3 border-b border-black/20">
-            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-tg-text-secondary">
+          <div className="px-4 py-3.5 border-b border-white/5">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-tg-text-secondary">
               <IdCard size={13} /> My address
             </div>
-            <div className="mt-2 rounded-lg bg-tg-input p-2 font-mono text-[11px] text-tg-text break-all leading-relaxed">{address}</div>
+            <div className="mt-2 rounded-xl bg-black/25 p-2.5 font-mono text-[11px] text-tg-text break-all leading-relaxed">{address}</div>
             <button
               onClick={copyAddress}
-              className="mt-2 w-full h-9 rounded-lg bg-tg-accent text-white text-xs font-medium hover:bg-tg-accent-hover transition-colors flex items-center justify-center gap-2"
+              className="btn btn-primary mt-2.5 w-full h-10 rounded-xl text-xs"
             >
               {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? 'Copied' : 'Copy address'}
@@ -99,19 +99,19 @@ export function HamburgerMenu({ onClose }: Props) {
                 <button
                   key={i}
                   onClick={item.action}
-                  className="w-full flex items-center gap-4 px-4 py-3 hover:bg-tg-hover transition-colors text-left"
+                  className="w-full flex items-center gap-4 px-4 py-3 hover:bg-tg-hover active:bg-tg-hover transition-colors text-left"
                 >
                   <span className="text-tg-text-secondary">{item.icon}</span>
-                  <span className="text-sm text-tg-text">{item.label}</span>
+                  <span className="text-[15px] text-tg-text">{item.label}</span>
                 </button>
               );
             })}
             <button
               onClick={() => { signOut(); onClose(); }}
-              className="w-full flex items-center gap-4 px-4 py-3 hover:bg-tg-hover transition-colors text-left"
+              className="w-full flex items-center gap-4 px-4 py-3 hover:bg-tg-red/10 transition-colors text-left"
             >
               <span className="text-tg-red"><LogOut size={20} /></span>
-              <span className="text-sm text-tg-red">Sign out</span>
+              <span className="text-[15px] text-tg-red">Sign out</span>
             </button>
           </div>
         </motion.div>

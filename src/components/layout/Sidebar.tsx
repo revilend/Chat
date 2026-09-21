@@ -135,18 +135,18 @@ export function Sidebar() {
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto px-1.5 pb-2 space-y-0.5">
         {onlyPlaceholders && !state.searchQuery && (
-          <div className="md:hidden m-3 rounded-xl bg-tg-accent/10 border border-tg-accent/25 p-3">
-            <div className="text-xs font-medium text-tg-text">Start a real conversation</div>
-            <div className="mt-1.5 font-mono text-[11px] text-tg-text break-all leading-relaxed">{state.session?.userId}</div>
+          <div className="md:hidden mx-1.5 mb-2 rounded-2xl bg-gradient-to-br from-tg-accent/25 to-tg-accent/5 border border-tg-accent/25 p-3.5">
+            <div className="text-[13px] font-semibold text-tg-text">Start a real conversation</div>
+            <div className="mt-2 rounded-xl bg-black/25 px-2.5 py-2 font-mono text-[11px] text-tg-text break-all leading-relaxed">{state.session?.userId}</div>
             <div className="mt-2.5 flex gap-2">
-              <button onClick={copyAddress} className="flex-1 h-9 rounded-lg bg-tg-accent text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-tg-accent-hover transition-colors">
-                {copied ? <Check size={14} /> : <Copy size={14} />}{copied ? 'Copied' : 'Copy my address'}
+              <button onClick={copyAddress} className="btn btn-primary flex-1 h-10 rounded-xl text-xs">
+                {copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copied' : 'Copy address'}
               </button>
-              <button onClick={() => dispatch({ type: 'TOGGLE_CONTACTS' })} className="flex-1 h-9 rounded-lg bg-tg-sidebar text-tg-text text-xs font-medium flex items-center justify-center gap-1.5 border border-black/20 hover:bg-tg-hover transition-colors">
-                <UserPlus size={14} />Add contact
+              <button onClick={() => dispatch({ type: 'TOGGLE_CONTACTS' })} className="btn btn-ghost flex-1 h-10 rounded-xl text-xs">
+                <UserPlus size={15} />Add contact
               </button>
             </div>
-            <p className="mt-2 text-[10px] text-tg-text-secondary leading-relaxed">
+            <p className="mt-2.5 text-[10px] text-tg-text-secondary leading-relaxed">
               Send your address to a friend — your messages travel straight between your two devices.
             </p>
           </div>
@@ -154,18 +154,15 @@ export function Sidebar() {
 
         {/* Archived chats */}
         {archivedCount > 0 && (
-          <button
-            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-tg-hover transition-colors"
-            onClick={() => dispatch({ type: 'TOGGLE_ARCHIVED_FOLDER' })}
-          >
-            <div className="w-[46px] h-[46px] rounded-full bg-tg-accent/20 flex items-center justify-center">
+          <button className="row" onClick={() => dispatch({ type: 'TOGGLE_ARCHIVED_FOLDER' })}>
+            <div className="w-[46px] h-[46px] rounded-full bg-tg-accent/20 flex items-center justify-center shrink-0">
               <Archive size={20} className="text-tg-accent" />
             </div>
-            <div className="text-left flex-1">
-              <div className="text-sm text-tg-accent">{t('archivedChats')}</div>
-              <div className="text-xs text-tg-text-secondary">{archivedCount}</div>
+            <div className="text-left flex-1 min-w-0">
+              <div className="text-[15px] font-medium text-tg-accent truncate">{t('archivedChats')}</div>
+              <div className="text-[13px] text-tg-text-secondary">{archivedCount}</div>
             </div>
-            <span className="text-xs text-tg-text-secondary">{archivedOpen ? '▲' : '▼'}</span>
+            <span className={`text-tg-text-secondary transition-transform ${archivedOpen ? 'rotate-180' : ''}`}>▾</span>
           </button>
         )}
 
@@ -176,8 +173,21 @@ export function Sidebar() {
 
         {filteredChats.length === 0 && state.searchQuery && (
           <div className="flex flex-col items-center justify-center py-16 text-tg-text-secondary">
-            <Search size={40} className="mb-3 opacity-50" />
+            <div className="w-14 h-14 rounded-full bg-tg-sidebar flex items-center justify-center mb-3">
+              <Search size={24} className="opacity-60" />
+            </div>
             <div className="text-sm">{t('noResults')}</div>
+            <div className="text-[11px] mt-1 opacity-70">Try a different word or an @username</div>
+          </div>
+        )}
+
+        {filteredChats.length === 0 && !state.searchQuery && (
+          <div className="flex flex-col items-center justify-center py-14 px-6 text-center text-tg-text-secondary">
+            <div className="w-14 h-14 rounded-full bg-tg-sidebar flex items-center justify-center text-2xl mb-3">💬</div>
+            <div className="text-sm">{state.activeFolder === 'all' ? 'No chats yet' : 'Nothing in this folder'}</div>
+            <div className="text-[11px] mt-1 opacity-70 leading-relaxed">
+              Add someone by the address they shared and the chat appears here.
+            </div>
           </div>
         )}
       </div>

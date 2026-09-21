@@ -35,180 +35,192 @@
   --shadow-raise: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+/* Everything here sits in Tailwind's `base` layer on purpose: utility classes
+   such as `bg-tg-accent` or `hidden` must always be able to override it. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Phones: fill the visible viewport so the composer never hides behind the
+     browser toolbar, and can be tapped above the home indicator. */
+  #root {
+    height: 100%;
+    height: 100dvh;
+  }
+
+  body {
+    background: var(--color-tg-bg);
+    color: var(--color-tg-text);
+  }
+
+  button {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    border: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+  }
+  button:disabled { cursor: not-allowed; }
+  button:active:not(:disabled) { transform: scale(0.96); }
+
+  input, textarea, select { font: inherit; color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-tg-accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-tg-accent) 45%, transparent);
+  }
+
+  /* Thin, unobtrusive scrollbars, the way a chat client should feel. */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(122, 138, 155, 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(122, 138, 155, 0.6); background-clip: content-box; }
 }
 
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+/* ── Components ────────────────────────────────────────────────────────────── */
+@layer components {
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: var(--color-tg-text-secondary);
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: var(--color-tg-hover); color: var(--color-tg-text); }
+  .icon-btn:active { background: color-mix(in srgb, var(--color-tg-accent) 22%, transparent); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--color-tg-accent);
+    color: #fff;
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--color-tg-accent) 32%, transparent);
+  }
+  .btn-primary:hover { background: var(--color-tg-accent-hover); }
+  .btn-primary:disabled { opacity: 0.55; box-shadow: none; }
+  .btn-ghost { background: var(--color-tg-input); color: var(--color-tg-text); }
+  .btn-ghost:hover { background: var(--color-tg-hover); }
+
+  .card {
+    background: var(--color-tg-elevated);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    box-shadow: var(--shadow-menu);
+  }
+
+  .field {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: var(--color-tg-input);
+    border: 1px solid transparent;
+    font-size: 15px;
+    outline: none;
+  }
+  .field::placeholder { color: var(--color-tg-text-secondary); }
+  .field:focus { border-color: var(--color-tg-accent); }
+
+  /* Message bubbles. Everything stays inside the bubble: nothing may push the
+     layout wider than the screen, which is what protruding tails used to do. */
+  .bubble {
+    border-radius: var(--radius-bubble);
+    overflow: hidden;
+    box-shadow: var(--shadow-raise);
+    animation: bubble-in 0.18s ease-out;
+  }
+
+  /* The last message of a run carries the "tail": its bottom corner is squared
+     off, exactly like the real client, without anything sticking out. */
+  .bubble-tail-out { border-bottom-right-radius: 6px; }
+  .bubble-tail-in { border-bottom-left-radius: 6px; }
+
+  /* A raised row, used for chat lists, contact lists and menu entries. */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 14px;
+    text-align: left;
+    transition: background-color 0.15s ease;
+  }
+  .row:hover { background: var(--color-tg-hover); }
+
+  .chat-doodle {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23172533' fill-opacity='0.3'%3E%3Cpath d='M15 5l2 3-2 3M45 25l2 3-2 3M25 45l2 3-2 3M5 15l2 3-2 3M35 35l2 3-2 3M55 5l2 3-2 3M20 10l1.5 2-1.5 2M50 40l1.5 2-1.5 2M10 50l1.5 2-1.5 2M40 20l1.5 2-1.5 2M30 0l1 1.5-1 1.5M0 30l1 1.5-1 1.5M60 50l1 1.5-1 1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* Spoiler */
+  .spoiler-hidden { filter: blur(4px); cursor: pointer; user-select: none; transition: filter 0.3s; }
+  .spoiler-hidden:hover { filter: blur(6px); }
+  .spoiler-revealed { filter: none; }
+
+  /* Audio waveform */
+  .waveform-bar { animation: waveform 0.8s ease-in-out infinite; }
+
+  /* Voice chat glow */
+  .glow-ring { animation: glow-pulse 2s ease-in-out infinite; }
+
+  /* Pin lock screen */
+  .pin-dot { transition: all 0.2s; }
+  .pin-dot.filled { background: var(--color-tg-accent); transform: scale(1.2); }
 }
 
-body {
-  background: var(--color-tg-bg);
-  color: var(--color-tg-text);
-}
-
-/* Phones: fill the visible viewport so the composer never hides behind the
-   browser toolbar, and can be tapped above the home indicator. */
-#root {
-  height: 100%;
-  height: 100dvh;
-}
-
-button {
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
-}
-button:disabled { cursor: not-allowed; }
-button:active:not(:disabled) { transform: scale(0.96); }
-
-input, textarea, select {
-  font: inherit;
-  color: inherit;
-}
-
-:focus-visible {
-  outline: 2px solid var(--color-tg-accent);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
-
-::selection {
-  background: color-mix(in srgb, var(--color-tg-accent) 45%, transparent);
-}
-
-/* Scrollbars: thin and unobtrusive, the way a chat client should feel. */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: rgba(122, 138, 155, 0.35);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-::-webkit-scrollbar-thumb:hover { background: rgba(122, 138, 155, 0.6); background-clip: content-box; }
-
-/* ── Reusable controls ─────────────────────────────────────────────────────── */
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  color: var(--color-tg-text-secondary);
-  flex-shrink: 0;
-}
-.icon-btn:hover { background: var(--color-tg-hover); color: var(--color-tg-text); }
-.icon-btn:active { background: color-mix(in srgb, var(--color-tg-accent) 22%, transparent); }
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 18px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.btn-primary {
-  background: var(--color-tg-accent);
-  color: #fff;
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-tg-accent) 35%, transparent);
-}
-.btn-primary:hover { background: var(--color-tg-accent-hover); }
-.btn-primary:disabled { opacity: 0.55; box-shadow: none; }
-.btn-ghost {
-  background: var(--color-tg-input);
-  color: var(--color-tg-text);
-}
-.btn-ghost:hover { background: var(--color-tg-hover); }
-
-.card {
-  background: var(--color-tg-elevated);
-  border: 1px solid rgba(0, 0, 0, 0.25);
-  border-radius: 16px;
-  box-shadow: var(--shadow-menu);
-}
-
-.field {
-  width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  border-radius: 12px;
-  background: var(--color-tg-input);
-  border: 1px solid transparent;
-  font-size: 14px;
-  outline: none;
-}
-.field::placeholder { color: var(--color-tg-text-secondary); }
-.field:focus { border-color: var(--color-tg-accent); }
-
-/* Chat doodle pattern */
+/* `.tg-doodle` is kept outside the layers so a wallpaper can be layered on top
+   of it without the background-image being dropped. */
 .tg-doodle {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23172533' fill-opacity='0.3'%3E%3Cpath d='M15 5l2 3-2 3M45 25l2 3-2 3M25 45l2 3-2 3M5 15l2 3-2 3M35 35l2 3-2 3M55 5l2 3-2 3M20 10l1.5 2-1.5 2M50 40l1.5 2-1.5 2M10 50l1.5 2-1.5 2M40 20l1.5 2-1.5 2M30 0l1 1.5-1 1.5M0 30l1 1.5-1 1.5M60 50l1 1.5-1 1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
-
-/* Spoiler */
-.spoiler-hidden {
-  filter: blur(4px);
-  cursor: pointer;
-  user-select: none;
-  transition: filter 0.3s;
-}
-.spoiler-hidden:hover {
-  filter: blur(6px);
-}
-.spoiler-revealed {
-  filter: none;
-}
-
-/* ── Message bubbles ───────────────────────────────────────────────────────── */
-/* Everything stays inside the bubble: nothing may push the layout wider than the
-   screen, which is what used to happen with the old protruding tails. */
-.bubble {
-  border-radius: var(--radius-bubble);
-  overflow: hidden;
-  box-shadow: var(--shadow-raise);
-  animation: bubble-in 0.18s ease-out;
-}
-
-/* The last message of a run carries the "tail": its bottom corner is squared off,
-   exactly like the real client, without anything sticking out. */
-.bubble-tail-out { border-bottom-right-radius: 6px; }
-.bubble-tail-in { border-bottom-left-radius: 6px; }
 
 @keyframes bubble-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Audio waveform */
 @keyframes waveform {
   0%, 100% { height: 4px; }
   50% { height: 16px; }
 }
-.waveform-bar {
-  animation: waveform 0.8s ease-in-out infinite;
-}
 
-/* Typing indicator */
 @keyframes typing-dot {
   0%, 60%, 100% { transform: translateY(0); }
   30% { transform: translateY(-4px); }
@@ -217,34 +229,19 @@ input, textarea, select {
 .typing-dot:nth-child(2) { animation: typing-dot 1.4s ease-in-out 0.2s infinite; }
 .typing-dot:nth-child(3) { animation: typing-dot 1.4s ease-in-out 0.4s infinite; }
 
-/* Stories progress */
 @keyframes story-progress {
   from { width: 0; }
   to { width: 100%; }
 }
 
-/* Confetti */
 @keyframes confetti-fall {
   0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
-/* Glow ring for voice chat */
 @keyframes glow-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(77, 205, 94, 0.4); }
   50% { box-shadow: 0 0 0 8px rgba(77, 205, 94, 0); }
-}
-.glow-ring {
-  animation: glow-pulse 2s ease-in-out infinite;
-}
-
-/* Pin lock screen */
-.pin-dot {
-  transition: all 0.2s;
-}
-.pin-dot.filled {
-  background: var(--color-tg-accent);
-  transform: scale(1.2);
 }
 
 /* Respect users who ask for less motion */

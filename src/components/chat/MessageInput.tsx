@@ -252,7 +252,7 @@ export function MessageInput({ chat }: Props) {
       <AnimatePresence>
         {isRecording && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-tg-reply-bar border-b border-black/20 px-4 py-2 flex items-center gap-3">
           <div className="w-3 h-3 bg-tg-red rounded-full animate-pulse" />
-          <span className="text-sm text-tg-text">{formatRecordTime(recordTime)}</span>
+          <span className="text-[15px] text-tg-text">{formatRecordTime(recordTime)}</span>
           <div className="flex-1 flex items-center gap-1 h-6">
             {(levels.length ? levels : Array.from({ length: 30 }, () => 0.2)).slice(-30).map((v, i) => (
               <div key={i} className="w-[3px] bg-tg-accent/60 rounded-full" style={{ height: `${Math.max(3, v * 24)}px` }} />
@@ -311,7 +311,7 @@ export function MessageInput({ chat }: Props) {
         <div className="relative shrink-0">
           <button onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); setShowQuickReplies(false); }} className="icon-btn" title="Emoji and stickers"><Smile size={22} /></button>
           <AnimatePresence>
-            {showEmoji && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 p-2 w-[280px] z-50">
+            {showEmoji && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="card absolute bottom-full mb-2 left-0 p-2.5 w-[292px] z-50">
               <div className="grid grid-cols-8 gap-0.5 max-h-[200px] overflow-y-auto">{emojiList.map((emoji, i) => <button key={i} onClick={() => { setText(prev => prev + emoji); inputRef.current?.focus(); }} className="w-8 h-8 flex items-center justify-center text-lg hover:bg-tg-hover rounded transition-colors">{emoji}</button>)}</div>
               <div className="mt-2 pt-2 border-t border-black/20">
                 <div className="text-[10px] text-tg-text-secondary mb-1">Stickers{!perms.canSendStickers && <span className="text-tg-red"> • admin only</span>}</div>
@@ -324,32 +324,32 @@ export function MessageInput({ chat }: Props) {
         <div className="relative shrink-0">
           <button onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); setShowQuickReplies(false); }} className="icon-btn" title="Attach"><Paperclip size={22} /></button>
           <AnimatePresence>
-            {showAttach && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 py-1 w-56 z-50">
+            {showAttach && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="card absolute bottom-full mb-2 left-0 py-1.5 w-60 z-50">
               {/* Feature 13: Media file picker with confirmation */}
               <label className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left ${mediaBlocked ? 'opacity-40' : 'cursor-pointer'}`}>
-                <Image size={18} className="text-blue-500" /><span className="text-sm text-tg-text">{t('media')}</span>
+                <Image size={18} className="text-blue-500" /><span className="text-[15px] text-tg-text">{t('media')}</span>
                 {mediaBlocked && <span className="text-[10px] text-tg-red ml-auto">admin only</span>}
                 <input type="file" multiple accept="image/*,video/*" className="hidden" disabled={mediaBlocked} onChange={handleFileSelect} />
               </label>
               <label className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left cursor-pointer">
-                <FileText size={18} className="text-purple-500" /><span className="text-sm text-tg-text">{t('files')}</span>
+                <FileText size={18} className="text-purple-500" /><span className="text-[15px] text-tg-text">{t('files')}</span>
                 <input type="file" multiple className="hidden" onChange={handleFileSelect} />
               </label>
-              <button onClick={() => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => deliver({ id: `msg_loc_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '', timestamp: Date.now(), type: 'location', location: { lat: pos.coords.latitude, lng: pos.coords.longitude }, readBy: ['user_me'] }), () => setRecordError('Location unavailable — allow location access and try again')); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><MapPin size={18} className="text-green-500" /><span className="text-sm text-tg-text">{t('sendLocation')}</span></button>
-              <button onClick={() => { dispatch({ type: 'TOGGLE_POLL_MODAL' }); setShowAttach(false); }} disabled={!perms.canSendPolls} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left disabled:opacity-40"><BarChart3 size={18} className="text-orange-500" /><span className="text-sm text-tg-text">{t('poll')}</span>{!perms.canSendPolls && <span className="text-[10px] text-tg-red ml-auto">admin only</span>}</button>
-              {chat.type === 'group' && <button onClick={() => { dispatch({ type: 'TOGGLE_SPLIT_BILL' }); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><span className="text-lg">💰</span><span className="text-sm text-tg-text">Split Bill</span></button>}
+              <button onClick={() => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => deliver({ id: `msg_loc_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: '', timestamp: Date.now(), type: 'location', location: { lat: pos.coords.latitude, lng: pos.coords.longitude }, readBy: ['user_me'] }), () => setRecordError('Location unavailable — allow location access and try again')); setShowAttach(false); }} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><MapPin size={18} className="text-green-500" /><span className="text-[15px] text-tg-text">{t('sendLocation')}</span></button>
+              <button onClick={() => { dispatch({ type: 'TOGGLE_POLL_MODAL' }); setShowAttach(false); }} disabled={!perms.canSendPolls} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left disabled:opacity-40"><BarChart3 size={18} className="text-orange-500" /><span className="text-[15px] text-tg-text">{t('poll')}</span>{!perms.canSendPolls && <span className="text-[10px] text-tg-red ml-auto">admin only</span>}</button>
+              {chat.type === 'group' && <button onClick={() => { dispatch({ type: 'TOGGLE_SPLIT_BILL' }); setShowAttach(false); }} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><span className="text-lg">💰</span><span className="text-[15px] text-tg-text">Split Bill</span></button>}
               <div className="border-t border-black/20 my-1" />
-              <button onClick={() => { dispatch({ type: 'TOGGLE_REMINDER_MODAL' }); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Bell size={18} className="text-yellow-500" /><span className="text-sm text-tg-text">Set Reminder</span></button>
-              {chat.type === 'private' && <button onClick={() => { const trimmed = text.trim(); if (trimmed) { deliver({ id: `msg_online_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: trimmed, timestamp: Date.now(), type: 'text', readBy: ['user_me'], sendWhenOnline: true }); setText(''); } setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Clock size={18} className="text-teal-400" /><span className="text-sm text-tg-text">Send When Online</span></button>}
-              {chat.type === 'channel' && <button onClick={() => { setShowPriceInput(true); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Star size={18} className="text-amber-400" /><span className="text-sm text-tg-text">Paid Post</span></button>}
-              {isGroupAdmin && <button onClick={() => { if (text.trim()) { dispatch({ type: 'POST_AS_ANONYMOUS', chatId: chat.id, text: text.trim() }); setText(''); } setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><EyeOff size={18} className="text-cyan-500" /><span className="text-sm text-tg-text">Post Anonymously</span></button>}
-              <button onClick={startVideoNote} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Video size={18} className="text-cyan-400" /><span className="text-sm text-tg-text">Video Message</span></button>
-              <button onClick={() => { setShowScheduled(true); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><Clock size={18} className="text-indigo-400" /><span className="text-sm text-tg-text">Send Later</span></button>
-              <button onClick={() => { setShowWallpaperPicker(!showWallpaperPicker); setShowAttach(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-tg-hover transition-colors text-left"><span className="text-lg">🎨</span><span className="text-sm text-tg-text">Chat Wallpaper</span></button>
+              <button onClick={() => { dispatch({ type: 'TOGGLE_REMINDER_MODAL' }); setShowAttach(false); }} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><Bell size={18} className="text-yellow-500" /><span className="text-[15px] text-tg-text">Set Reminder</span></button>
+              {chat.type === 'private' && <button onClick={() => { const trimmed = text.trim(); if (trimmed) { deliver({ id: `msg_online_${Date.now()}`, chatId: chat.id, senderId: 'user_me', text: trimmed, timestamp: Date.now(), type: 'text', readBy: ['user_me'], sendWhenOnline: true }); setText(''); } setShowAttach(false); }} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><Clock size={18} className="text-teal-400" /><span className="text-[15px] text-tg-text">Send When Online</span></button>}
+              {chat.type === 'channel' && <button onClick={() => { setShowPriceInput(true); setShowAttach(false); }} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><Star size={18} className="text-amber-400" /><span className="text-[15px] text-tg-text">Paid Post</span></button>}
+              {isGroupAdmin && <button onClick={() => { if (text.trim()) { dispatch({ type: 'POST_AS_ANONYMOUS', chatId: chat.id, text: text.trim() }); setText(''); } setShowAttach(false); }} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><EyeOff size={18} className="text-cyan-500" /><span className="text-[15px] text-tg-text">Post Anonymously</span></button>}
+              <button onClick={startVideoNote} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><Video size={18} className="text-cyan-400" /><span className="text-[15px] text-tg-text">Video Message</span></button>
+              <button onClick={() => { setShowScheduled(true); setShowAttach(false); }} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><Clock size={18} className="text-indigo-400" /><span className="text-[15px] text-tg-text">Send Later</span></button>
+              <button onClick={() => { setShowWallpaperPicker(!showWallpaperPicker); setShowAttach(false); }} className="w-full flex items-center gap-3.5 px-3.5 py-2.5 hover:bg-tg-hover transition-colors text-left"><span className="text-lg">🎨</span><span className="text-[15px] text-tg-text">Chat Wallpaper</span></button>
             </motion.div>}
           </AnimatePresence>
           <AnimatePresence>
-            {showWallpaperPicker && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 p-3 w-56 z-50">
+            {showWallpaperPicker && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="card absolute bottom-full mb-2 left-0 p-3.5 w-60 z-50">
               <div className="text-xs text-tg-text-secondary mb-2">Chat Wallpaper</div>
               <div className="grid grid-cols-5 gap-1.5">
                 {wallpapers.map((c, i) => <button key={i} onClick={() => { dispatch({ type: 'SET_CHAT_WALLPAPER', chatId: chat.id, wallpaper: c }); setShowWallpaperPicker(false); }} className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${chat.wallpaper === c ? 'border-tg-accent' : 'border-transparent'}`} style={{ background: c }} />)}
@@ -362,7 +362,7 @@ export function MessageInput({ chat }: Props) {
         <div className="relative shrink-0">
           <button onClick={() => { setShowQuickReplies(!showQuickReplies); setShowEmoji(false); setShowAttach(false); }} className="icon-btn hidden sm:inline-flex" title="Quick replies"><Slash size={22} /></button>
           <AnimatePresence>
-            {showQuickReplies && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-2 left-0 bg-tg-sidebar rounded-xl shadow-2xl border border-black/20 py-1 w-56 z-50">
+            {showQuickReplies && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="card absolute bottom-full mb-2 left-0 py-1.5 w-60 z-50">
               {quickReplies.map((r, i) => <button key={i} onClick={() => { setText(r); setShowQuickReplies(false); inputRef.current?.focus(); }} className="w-full text-left px-3 py-2 text-sm text-tg-text hover:bg-tg-hover transition-colors">{r}</button>)}
             </motion.div>}
           </AnimatePresence>
