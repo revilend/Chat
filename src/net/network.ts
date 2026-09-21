@@ -1,4 +1,4 @@
-import Peer, { type DataConnection } from 'peerjs';
+import Peer, { type DataConnection, type MediaConnection } from 'peerjs';
 import { peerIdFor, userIdFromPeerId, shortId } from '../utils/identity';
 
 export type CloudStatus = 'off' | 'connecting' | 'online' | 'error';
@@ -28,7 +28,10 @@ export type NetEvent =
   | { type: 'status'; status: CloudStatus; detail?: string }
   | { type: 'peer'; userId: string; state: PeerState }
   | { type: 'message'; userId: string; envelope: OutgoingEnvelope }
-  | { type: 'profile'; userId: string; username: string; name?: string };
+  | { type: 'profile'; userId: string; username: string; name?: string }
+  /** Somebody is calling: their audio (and video) stream is waiting to be answered. */
+  | { type: 'call'; userId: string; connection: MediaConnection; video: boolean }
+  | { type: 'call-closed'; userId: string };
 
 interface Link {
   connection: DataConnection;
@@ -53,6 +56,7 @@ class Network {
   private dialTimers = new Map<string, ReturnType<typeof setInterval>>();
   private heartbeat: ReturnType<typeof setInterval> | null = null;
   private status: CloudStatus = 'off';
+  private media: MediaConnection | null = null;
 
   userId: string | null = null;
   username = '';
@@ -97,6 +101,14 @@ class Network {
 
       this.peer.on('connection', (connection) => this.accept(connection));
 
+      // A real call: the other person's microphone/camera arrives here.
+      this.peer.on('call', (connection) => {
+        const userId = userIdFromPeerId(connection.peer);
+        if (!userId || userId === this.userId) return;
+        const meta = (connection.metadata ?? {}) as { video?: boolean };
+        this.emit({ type: 'call', userId, connection, video: !!meta.video });
+      });
+
       this.peer.on('error', (err: Error & { type?: string }) => {
         const detail = err.type === 'unavailable-id'
           ? 'This account is already signed in somewhere else. Close the other tab to keep it here.'
@@ -117,7 +129,38 @@ class Network {
     }
   }
 
+  /**
+   * Starts a real call and hands our own audio/video stream to the other person.
+   * Returns the connection so the UI can react to it, or null when they are not
+   * reachable at all.
+   */
+  call(userId: string, stream: MediaStream, video: boolean): MediaConnection | null {
+    if (!this.peer?.open) return null;
+    try {
+      const connection = this.peer.call(peerIdFor(userId), stream, { metadata: { video } });
+      if (!connection) return null;
+      this.media = connection;
+      return connection;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Accepts a call that is ringing here. */
+  answer(connection: MediaConnection, stream: MediaStream) {
+    this.media = connection;
+    try { connection.answer(stream); } catch { /* the caller hung up first */ }
+  }
+
+  /** Ends whichever call this device is part of. */
+  hangUpCall() {
+    const connection = this.media;
+    this.media = null;
+    try { connection?.close(); } catch { /* already gone */ }
+  }
+
   stop() {
+    this.hangUpCall();
     this.dialTimers.forEach(timer => clearInterval(timer));
     this.dialTimers.clear();
     if (this.heartbeat) { clearInterval(this.heartbeat); this.heartbeat = null; }

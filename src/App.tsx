@@ -81,7 +81,7 @@ export function AppInner() {
       {state.isPollModalOpen && <PollModal />}
       {state.isQRCodeOpen && <QRCodeModal />}
       {state.isGiftModalOpen && <GiftModal />}
-      {state.isCallActive && <CallModal />}
+      {(state.isCallActive || state.incomingCall) && <CallModal />}
       {state.miniApp === 'snake' && <MiniAppSnake />}
       {state.miniApp === '2048' && <MiniApp2048 />}
       <ReminderModal />

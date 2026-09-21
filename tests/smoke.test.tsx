@@ -216,7 +216,24 @@ const queued = messageFromEnvelope(PEER, envelopeFor(
 if (queued.scheduledAt === undefined && queued.sendWhenOnline === undefined) console.log('✅ a message still waiting is never delivered early');
 else { failures++; console.log('❌ queued fields leaked onto the wire'); }
 
-// ═══ 6. Phone layout: one pane at a time, never two squeezed side by side ═══
+// ═══ 6. A ringing call is a real incoming call, with accept and decline ═══
+const ringing = render('incoming call', surface(createElement(AppInner), {
+  ...peerState,
+  incomingCall: {
+    userId: PEER,
+    video: true,
+    connection: { peer: `tgweb-${PEER}`, metadata: { video: true }, open: true, on() {}, answer() {}, close() {} } as never,
+  },
+}));
+expect(ringing, 'Bekzod', 'the caller is named on the incoming call screen');
+expect(ringing, 'Incoming video call', 'the screen says a video call is ringing');
+const callButtons = (ringing.match(/rounded-full bg-tg-(red|green)/g) || []).length;
+if (callButtons >= 2) console.log('✅ the call offers decline and accept');
+else { failures++; console.log(`❌ the incoming call has no accept/decline pair (${callButtons})`); }
+if (ringing.includes('src="data:')) { failures++; console.log('❌ the call still fakes a connection'); }
+else console.log('✅ nothing about the call is pre-rendered as connected');
+
+// ═══ 7. Phone layout: one pane at a time, never two squeezed side by side ═══
 // Hiding is done with classes, so the assertion reads the pane's own class list.
 function paneVisible(html: string, testId: string) {
   const i = html.indexOf(`data-testid="${testId}"`);

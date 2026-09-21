@@ -5,6 +5,7 @@ import { saveData, getData, clearStore } from '../db';
 import { playIncomingMessage, playOutgoingMessage } from '../utils/audio';
 import { parseInviteHash } from '../utils/invite';
 import { network, type CloudStatus, type OutgoingEnvelope } from '../net/network';
+import type { MediaConnection } from 'peerjs';
 import { loadSession, type Session } from '../auth/session';
 import { isValidUserId, shortId } from '../utils/identity';
 import { buildAccountWorkspace } from '../auth/workspace';
@@ -54,6 +55,9 @@ export interface AppState {
   netDetail: string;
   /** People currently reachable right now. */
   peerPresence: Record<string, boolean>;
+  // --- Real peer-to-peer calls ---
+  /** A call ringing on this device, waiting to be answered. */
+  incomingCall: { userId: string; connection: MediaConnection; video: boolean } | null;
 }
 
 type Action =
@@ -65,6 +69,8 @@ type Action =
   | { type: 'TOGGLE_CREATE_GROUP' } | { type: 'TOGGLE_CREATE_CHANNEL' } | { type: 'TOGGLE_POLL_MODAL' }
   | { type: 'TOGGLE_QR_CODE' } | { type: 'TOGGLE_PHOTO_EDITOR' } | { type: 'TOGGLE_GIFT_MODAL' }
   | { type: 'START_CALL'; chatId: string; callType: 'voice' | 'video' } | { type: 'END_CALL' }
+  | { type: 'INCOMING_CALL'; userId: string; connection: MediaConnection; video: boolean }
+  | { type: 'CLEAR_INCOMING_CALL' }
   | { type: 'SET_LANGUAGE'; lang: Language } | { type: 'SET_THEME'; theme: ThemeMode }
   | { type: 'SET_PASSCODE'; code: string | null } | { type: 'SET_LOCKED'; locked: boolean }
   | { type: 'SET_AWAY_MODE'; away: boolean } | { type: 'SET_AWAY_MESSAGE'; msg: string }
@@ -193,6 +199,7 @@ const initialState: AppState = {
   netStatus: 'off',
   netDetail: '',
   peerPresence: {},
+  incomingCall: null,
 };
 
 /** The stored session decides which workspace the app opens with. */
@@ -276,7 +283,9 @@ function reducer(state: AppState, action: Action): AppState {
     case 'TOGGLE_PHOTO_EDITOR': return { ...state, isPhotoEditorOpen: !state.isPhotoEditorOpen };
     case 'TOGGLE_GIFT_MODAL': return { ...state, isGiftModalOpen: !state.isGiftModalOpen };
     case 'START_CALL': return { ...state, isCallActive: true, callType: action.callType, callChatId: action.chatId };
-    case 'END_CALL': return { ...state, isCallActive: false, callChatId: null };
+    case 'END_CALL': return { ...state, isCallActive: false, callChatId: null, incomingCall: null };
+    case 'INCOMING_CALL': return { ...state, incomingCall: { userId: action.userId, connection: action.connection, video: action.video } };
+    case 'CLEAR_INCOMING_CALL': return { ...state, incomingCall: null };
     case 'SET_LANGUAGE': return { ...state, language: action.lang };
     case 'SET_THEME': return { ...state, theme: action.theme };
     case 'SET_PASSCODE': return { ...state, passcode: action.code };
@@ -628,6 +637,15 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
       }
       if (event.type === 'profile') {
         dispatch({ type: 'ADD_PEER', userId: event.userId, name: event.name || event.username, username: event.username });
+        return;
+      }
+      if (event.type === 'call') {
+        dispatch({ type: 'ADD_PEER', userId: event.userId, name: shortId(event.userId), username: '' });
+        dispatch({ type: 'INCOMING_CALL', userId: event.userId, connection: event.connection, video: event.video });
+        return;
+      }
+      if (event.type === 'call-closed') {
+        dispatch({ type: 'CLEAR_INCOMING_CALL' });
         return;
       }
 
