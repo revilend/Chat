@@ -1,5 +1,5 @@
-const CACHE_NAME = 'telegram-web-v2';
-const APP_SHELL = ['./', './index.html', './manifest.json', './favicon.svg'];
+const CACHE_NAME = 'teleflow-v1';
+const APP_SHELL = ['./', './index.html', './manifest.json', './favicon.svg', './icon-192.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

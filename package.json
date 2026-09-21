@@ -1,5 +1,5 @@
 {
-  "name": "codebase",
+  "name": "teleflow",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "icons": "bun scripts/make-icons.mjs",
     "test": "bun tests/logic.test.ts && bun tests/smoke.test.tsx",
     "preview": "vite preview"
   },

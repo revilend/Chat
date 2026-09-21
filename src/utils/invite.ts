@@ -1,4 +1,4 @@
-/** Parses a Telegram-style invite hash (`#join/<chatId>`) into a chat id, or null. */
+/** Parses an invite hash (`#join/<chatId>`) into a chat id, or null. */
 export function parseInviteHash(hash: string): string | null {
   if (!hash) return null;
   const match = hash.match(/^#join\/(.+)$/);

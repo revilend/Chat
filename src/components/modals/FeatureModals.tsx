@@ -98,7 +98,7 @@ export function WalletModal() {
         </div>
         <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl p-4 text-center mb-4 border border-amber-500/20">
           <div className="text-3xl font-bold text-amber-400">⭐ {w.stars}</div>
-          <div className="text-xs text-tg-text-secondary mt-1">Telegram Stars</div>
+          <div className="text-xs text-tg-text-secondary mt-1">Teleflow Stars</div>
         </div>
         <div className="flex gap-2 mb-4">
           {[10, 50, 100, 500].map(amount => (

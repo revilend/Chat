@@ -472,7 +472,7 @@ export function AppProvider({ children, overrides }: { children: ReactNode; over
 
   useEffect(() => {
     try {
-      channelRef.current = new BroadcastChannel('telegram-web');
+      channelRef.current = new BroadcastChannel('teleflow');
       channelRef.current.onmessage = (event) => {
         const { type, payload } = event.data;
         if (type === 'NEW_MESSAGE' && payload.senderId !== 'user_me') dispatch({ type: 'RECEIVE_MESSAGE', message: payload });

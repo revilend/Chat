@@ -54,7 +54,7 @@ body {
 ::-webkit-scrollbar-thumb { background: #3a4a5b; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #4a5a6b; }
 
-/* Telegram doodle pattern */
+/* Chat doodle pattern */
 .tg-doodle {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23172533' fill-opacity='0.3'%3E%3Cpath d='M15 5l2 3-2 3M45 25l2 3-2 3M25 45l2 3-2 3M5 15l2 3-2 3M35 35l2 3-2 3M55 5l2 3-2 3M20 10l1.5 2-1.5 2M50 40l1.5 2-1.5 2M10 50l1.5 2-1.5 2M40 20l1.5 2-1.5 2M30 0l1 1.5-1 1.5M0 30l1 1.5-1 1.5M60 50l1 1.5-1 1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }

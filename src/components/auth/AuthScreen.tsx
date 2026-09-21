@@ -63,7 +63,7 @@ export function AuthScreen() {
               </svg>
             </div>
             <div>
-              <div className="text-2xl font-semibold text-tg-text tracking-tight">Telegram Web</div>
+              <div className="text-2xl font-semibold text-tg-text tracking-tight">Teleflow</div>
               <div className="text-xs text-tg-text-secondary">Messages that go straight to the other device</div>
             </div>
           </div>

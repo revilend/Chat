@@ -1,6 +1,6 @@
-# Telegram Web — real accounts, real people, no server
+# Teleflow — real accounts, real people, no server
 
-A Telegram Web (K/Z) style client that runs entirely in the browser and is deployable as a static
+Teleflow is a Telegram-style web client that runs entirely in the browser and deploys as a static
 site on GitHub Pages. This is **not a demo**: you create a real account, share your address, and
 messages travel directly between two devices over an encrypted WebRTC data channel.
 
@@ -32,6 +32,8 @@ browsers find each other. Message contents never pass through it.
 - Extras: polls, split bills, reminders, scheduled and "send when online" messages, a wallet with
   Stars, paid posts, a sticker pack maker, bookmarks and tags, Do Not Disturb, ghost mode, a
   calendar history view, print/PDF export and offline install as a PWA
+- One pane at a time on a phone (chat list, or the open chat) and a resizable two-pane layout on
+  desktop
 
 ## Development
 
@@ -40,6 +42,7 @@ bun install
 bun run dev       # dev server
 bun run build     # type-check + production build into dist/
 bun run test      # account identity checks + UI smoke test
+bun run icons     # regenerate the PWA PNG icons from scripts/make-icons.mjs
 ```
 
 ## Deploying to GitHub Pages
@@ -72,3 +75,5 @@ custom domain has to be attached by adding a `public/CNAME` file with the domain
 - The password is only ever used locally to derive the account address; it is not stored.
 - There is no password recovery: whoever knows the username and password can reproduce the address.
 - Messages are peer-to-peer and are stored in the browser (IndexedDB) of each participant only.
+- The IndexedDB database and the local storage keys still use their original names so that chats
+  saved before the rename are not discarded.

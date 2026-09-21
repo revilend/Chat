@@ -94,6 +94,9 @@ function render(label: string, node: ReturnType<typeof createElement>): string {
 
 // ═══ 1. Signed out: the real sign-in screen is what visitors see ═══
 const signedOut = render('signed out → auth screen', createElement(App));
+expect(signedOut, 'Teleflow', 'the sign-in screen carries the product name');
+if (signedOut.includes('Telegram')) { failures++; console.log('❌ the old product name is still on the sign-in screen'); }
+else console.log('✅ no leftovers of the old product name');
 expect(signedOut, 'Create account', 'create-account tab is offered');
 expect(signedOut, 'Sign in', 'sign-in tab is offered');
 expect(signedOut, 'device to device', 'the screen explains how messages travel');

@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    appName: 'Telegram',
+    appName: 'Teleflow',
     search: 'Search',
     settings: 'Settings',
     newGroup: 'New Group',
@@ -116,7 +116,7 @@ export const translations = {
     fiveSeconds: '5 seconds',
     oneMinute: '1 minute',
     oneDay: '24 hours',
-    poweredBy: 'Powered by Telegram Web',
+    poweredBy: 'Powered by Teleflow',
     away: 'Away',
     willReturnSoon: 'I will return soon',
     accessChat: 'Access Chat',
@@ -158,7 +158,7 @@ export const translations = {
     gameCommand: '/game - Play a game',
   },
   uz: {
-    appName: 'Telegram',
+    appName: 'Teleflow',
     search: 'Qidirish',
     settings: 'Sozlamalar',
     newGroup: 'Yangi guruh',
@@ -274,7 +274,7 @@ export const translations = {
     fiveSeconds: '5 soniya',
     oneMinute: '1 daqiqa',
     oneDay: '24 soat',
-    poweredBy: 'Telegram Web asosida',
+    poweredBy: 'Teleflow asosida',
     away: 'Uzoqda',
     willReturnSoon: 'Tez orada qaytaman',
     accessChat: 'Suhbatga kirish',
@@ -316,7 +316,7 @@ export const translations = {
     gameCommand: '/game - O\'yin o\'ynash',
   },
   ru: {
-    appName: 'Telegram',
+    appName: 'Teleflow',
     search: 'Поиск',
     settings: 'Настройки',
     newGroup: 'Новая группа',
@@ -432,7 +432,7 @@ export const translations = {
     fiveSeconds: '5 секунд',
     oneMinute: '1 минута',
     oneDay: '24 часа',
-    poweredBy: 'На базе Telegram Web',
+    poweredBy: 'На базе Teleflow',
     away: 'Отошёл',
     willReturnSoon: 'Скоро вернусь',
     accessChat: 'Войти в чат',
